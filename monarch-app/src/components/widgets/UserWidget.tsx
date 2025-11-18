@@ -131,16 +131,16 @@ export const UserWidget: React.FC = () => {
               <tbody>
                 {userData.map((row, index) => (
                   <tr key={index}>
-                    <td data-label="사원코드">{row.USER_CODE}</td>
-                    <td data-label="사원명">{row.USER_NAME}</td>
-                    <td data-label="부서명">{row.DEPT_NAME}</td>
-                    <td data-label="직위">{row.POSITION_CODE}</td>
-                    <td data-label="직책">{row.DUTY_CODE}</td>
-                    <td data-label="핸드폰">{row.MOBILE_NO}</td>
+                    <td data-label="사원코드" className={styles.textCenter}>{row.USER_CODE}</td>
+                    <td data-label="사원명" className={styles.textCenter}>{row.USER_NAME}</td>
+                    <td data-label="부서명" className={styles.textCenter}>{row.DEPT_NAME}</td>
+                    <td data-label="직위" className={styles.textCenter}>{row.POSITION_CODE}</td>
+                    <td data-label="직책" className={styles.textCenter}>{row.DUTY_CODE}</td>
+                    <td data-label="핸드폰" className={styles.textCenter}>{row.MOBILE_NO}</td>
                     <td data-label="EMAIL">{row.EMAIL}</td>
-                    <td data-label="사용">{row.USE_FLAG === '1' ? '사용' : '미사용'}</td>
-                    <td data-label="입사일자">{row.HIRE_DATE ? new Date(row.HIRE_DATE.toString()).toISOString().slice(0, 10) : ''}</td>
-                    <td data-label="퇴직일자">{row.RETIREMENT_DATE ? new Date(row.RETIREMENT_DATE.toString()).toISOString().slice(0, 10) : ''}</td>
+                    <td data-label="사용" className={styles.textCenter}>{row.USE_FLAG === '1' ? '사용' : '미사용'}</td>
+                    <td data-label="입사일자" className={styles.textCenter}>{row.HIRE_DATE ? new Date(row.HIRE_DATE.toString()).toISOString().slice(0, 10) : ''}</td>
+                    <td data-label="퇴직일자" className={styles.textCenter}>{row.RETIREMENT_DATE ? new Date(row.RETIREMENT_DATE.toString()).toISOString().slice(0, 10) : ''}</td>
                   </tr>
                 ))}
               </tbody>

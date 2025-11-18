@@ -131,13 +131,13 @@ const ContactWidget: React.FC = () => {
                             <tbody>
                                 {contactData.map((row, index) => (
                                     <tr key={index}>
-                                        <td data-label="접촉일자">
+                                        <td data-label="접촉일자" className={styles.textCenter}>
                                             {row.CTTDATE ? new Date(row.CTTDATE.toString()).toISOString().slice(0, 10) : ''}
                                         </td>
-                                        <td data-label="접촉자">{row.CTTUSER_NM}</td>
-                                        <td data-label="고객명">{row.CSTNAME}</td>
-                                        <td data-label="회사명">{row.COMPANY}</td>
-                                        <td data-label="접촉채널">{row.CTTCHANNEL_NM}</td>
+                                        <td data-label="접촉자" className={styles.textCenter}>{row.CTTUSER_NM}</td>
+                                        <td data-label="고객명" className={styles.textCenter}>{row.CSTNAME}</td>
+                                        <td data-label="회사명" className={styles.textCenter}>{row.COMPANY}</td>
+                                        <td data-label="접촉채널" className={styles.textCenter}>{row.CTTCHANNEL_NM}</td>
                                         <td data-label="접촉목표">{row.CONTGOALID_NM}</td>
                                         <td data-label="접촉결과">{row.CTTRESULT_NM}</td>
                                     </tr>

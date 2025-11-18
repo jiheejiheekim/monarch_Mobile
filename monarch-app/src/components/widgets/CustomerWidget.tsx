@@ -117,21 +117,29 @@ const CustomerWidget: React.FC = () => {
                         <table className={styles.userDataTable}>
                             <thead>
                                 <tr>
+                                    <th className={styles.textCenter}>고객번호</th>
                                     <th className={styles.textCenter}>고객명</th>
-                                    <th className={styles.textCenter}>회사명</th>
+                                    <th className={styles.textCenter}>직장</th>
+                                    <th className={styles.textCenter}>부서</th>
                                     <th className={styles.textCenter}>직책</th>
-                                    <th className={styles.textCenter}>휴대폰번호</th>
+                                    <th className={styles.textCenter}>핸드폰</th>
+                                    <th className={styles.textCenter}>직장전화</th>
+                                    <th className={styles.textCenter}>EMAIL</th>
                                     <th className={styles.textCenter}>담당자</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {customerData.map((row, index) => (
                                     <tr key={index}>
-                                        <td data-label="고객명">{row.CSTNAME}</td>
-                                        <td data-label="회사명">{row.COMPANY}</td>
-                                        <td data-label="직책">{row.JOBTITLE}</td>
-                                        <td data-label="휴대폰번호">{row.PHONE}</td>
-                                        <td data-label="담당자">{row.OWNER_NM}</td>
+                                        <td data-label="고객번호" className={styles.textCenter}>{row.CSTID}</td>
+                                        <td data-label="고객명" className={styles.textCenter}>{row.CSTNAME}</td>
+                                        <td data-label="직장" className={styles.textCenter}>{row.COMPANY}</td>
+                                        <td data-label="부서" className={styles.textCenter}>{row.DEPARTMENT}</td>
+                                        <td data-label="직책" className={styles.textCenter}>{row.JOBTITLE}</td>
+                                        <td data-label="핸드폰" className={styles.textCenter}>{row.PHONE}</td>
+                                        <td data-label="직장전화" className={styles.textCenter}>{row.WRKTELNUM}</td>
+                                        <td data-label="EMAIL">{row.EMAIL}</td>
+                                        <td data-label="담당자" className={styles.textCenter}>{row.OWNER_NM}</td>
                                     </tr>
                                 ))}
                             </tbody>

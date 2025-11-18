@@ -117,13 +117,13 @@ const SalesWidget: React.FC = () => {
                         <table className={styles.userDataTable}>
                             <thead>
                                 <tr>
-                                    <th>영업번호</th>
-                                    <th>영업기회명</th>
-                                    <th>고객사명</th>
-                                    <th>담당자</th>
-                                    <th>예상수주일</th>
-                                    <th>예상수주금액</th>
-                                    <th>진행상태</th>
+                                    <th className={styles.textCenter}>영업번호</th>
+                                    <th className={styles.textCenter}>영업기회명</th>
+                                    <th className={styles.textCenter}>고객사명</th>
+                                    <th className={styles.textCenter}>담당자</th>
+                                    <th className={styles.textCenter}>예상수주일</th>
+                                    <th className={styles.textRight}>예상수주금액</th>
+                                    <th className={styles.textCenter}>진행상태</th>
                                 </tr> 
                             </thead>
                             <tbody>

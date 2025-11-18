@@ -275,10 +275,13 @@
     border-bottom-right-radius: 0.25rem;
 }
 
-.textCenter {
+/* .userDataTable 내의 th, td에 적용될 때 우선순위를 높여 기본 정렬을 덮어쓰도록 합니다. */
+.userDataTable th.textCenter,
+.userDataTable td.textCenter {
     text-align: center;
 }
 
-.textRight {
+.userDataTable th.textRight,
+.userDataTable td.textRight {
     text-align: right;
 }

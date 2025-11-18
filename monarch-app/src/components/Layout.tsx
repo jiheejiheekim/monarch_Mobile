@@ -18,7 +18,7 @@ const menuItems = [
         { name: '접촉관리', path: '/sales/contact' } // "접촉관리" 메뉴로 수정
     ] },
     { name: '고객', icon: '👥', subItems: [{ name: '고객관리', path: '/customer' }] },
-    { name: 'Admin', icon: '⚙️', subItems: [{ name: '사용자정보', path: '/admin/users' }, { name: '개발정보', path: '/admin/dev' }] },
+    { name: 'Admin', icon: '⚙️', subItems: [{ name: '사용자관리', path: '/admin/users' }, { name: '개발정보', path: '/admin/dev' }] },
 ];
 
 const Layout: React.FC = () => {
