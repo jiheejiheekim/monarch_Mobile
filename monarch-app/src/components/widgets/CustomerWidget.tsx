@@ -80,7 +80,7 @@ const CustomerWidget: React.FC = () => {
         fetchCustomerData(currentPage);
     }, [fetchCustomerData, currentPage]);
 
-    const handlePageChange = (page: number) => {
+    const handlePageChange = (page: number) => { // 이 함수는 Pagination 컴포넌트에서 사용됩니다.
         setCurrentPage(page);
     };
 
@@ -117,11 +117,11 @@ const CustomerWidget: React.FC = () => {
                         <table className={styles.userDataTable}>
                             <thead>
                                 <tr>
-                                    <th>고객명</th>
-                                    <th>회사명</th>
-                                    <th>직책</th>
-                                    <th>휴대폰번호</th>
-                                    <th>담당자</th>
+                                    <th className={styles.textCenter}>고객명</th>
+                                    <th className={styles.textCenter}>회사명</th>
+                                    <th className={styles.textCenter}>직책</th>
+                                    <th className={styles.textCenter}>휴대폰번호</th>
+                                    <th className={styles.textCenter}>담당자</th>
                                 </tr>
                             </thead>
                             <tbody>

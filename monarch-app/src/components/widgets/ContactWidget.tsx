@@ -80,7 +80,7 @@ const ContactWidget: React.FC = () => {
         fetchContactData(currentPage);
     }, [fetchContactData, currentPage]);
 
-    const handlePageChange = (page: number) => {
+    const handlePageChange = (page: number) => { // 이 함수는 Pagination 컴포넌트에서 사용됩니다.
         setCurrentPage(page);
     };
 
@@ -119,19 +119,21 @@ const ContactWidget: React.FC = () => {
                         <table className={styles.userDataTable}>
                             <thead>
                                 <tr>
-                                    <th>접촉일자</th>
-                                    <th>접촉자</th>
-                                    <th>고객명</th>
-                                    <th>회사명</th>
-                                    <th>접촉채널</th>
-                                    <th>접촉목표</th>
-                                    <th>접촉결과</th>
+                                    <th className={styles.textCenter}>접촉일자</th>
+                                    <th className={styles.textCenter}>접촉자</th>
+                                    <th className={styles.textCenter}>고객명</th>
+                                    <th className={styles.textCenter}>회사명</th>
+                                    <th className={styles.textCenter}>접촉채널</th>
+                                    <th className={styles.textCenter}>접촉목표</th>
+                                    <th className={styles.textCenter}>접촉결과</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {contactData.map((row, index) => (
                                     <tr key={index}>
-                                        <td data-label="접촉일자">{row.CTTDATE}</td>
+                                        <td data-label="접촉일자">
+                                            {row.CTTDATE ? new Date(row.CTTDATE.toString()).toISOString().slice(0, 10) : ''}
+                                        </td>
                                         <td data-label="접촉자">{row.CTTUSER_NM}</td>
                                         <td data-label="고객명">{row.CSTNAME}</td>
                                         <td data-label="회사명">{row.COMPANY}</td>

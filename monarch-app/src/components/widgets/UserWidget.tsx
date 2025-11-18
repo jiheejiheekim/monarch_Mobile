@@ -80,15 +80,15 @@ export const UserWidget: React.FC = () => {
       fetchUserData(currentPage);
   }, [fetchUserData, currentPage]);
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = (page: number) => { // 이 함수는 Pagination 컴포넌트에서 사용됩니다.
       setCurrentPage(page);
   };
 
-  if (isLoading) return <Widget title="사용자 관리"><div className={styles.loading}>데이터를 불러오는 중입니다...</div></Widget>;
-  if (error) return <Widget title="사용자 관리"><div className={styles.error}>{error}</div></Widget>;
+  if (isLoading) return <Widget title="사용자 정보"><div className={styles.loading}>데이터를 불러오는 중입니다...</div></Widget>;
+  if (error) return <Widget title="사용자 정보"><div className={styles.error}>{error}</div></Widget>;
 
   return (
-    <Widget title="사용자 관리">
+    <Widget title="사용자 정보">
       <div className={styles.filterContainer}>
         <div className={styles.filterRow}>
             <select className={styles.filterSelect} value={searchColumn} onChange={e => setSearchColumn(e.target.value)} required>
@@ -116,17 +116,31 @@ export const UserWidget: React.FC = () => {
             <table className={styles.userDataTable}>
               <thead>
                 <tr>
-                  <th>사용자 코드</th>
-                  <th>사용자명</th>
-                  <th>부서명</th>
+                  <th className={styles.textCenter}>사원코드</th>
+                  <th className={styles.textCenter}>사원명</th>
+                  <th className={styles.textCenter}>부서명</th>
+                  <th className={styles.textCenter}>직위</th>
+                  <th className={styles.textCenter}>직책</th>
+                  <th className={styles.textCenter}>핸드폰</th>
+                  <th className={styles.textCenter}>EMAIL</th>
+                  <th className={styles.textCenter}>사용</th>
+                  <th className={styles.textCenter}>입사일자</th>
+                  <th className={styles.textCenter}>퇴직일자</th>
                 </tr>
               </thead>
               <tbody>
                 {userData.map((row, index) => (
                   <tr key={index}>
-                    <td data-label="사용자 코드">{row.USER_CODE}</td>
-                    <td data-label="사용자명">{row.USER_NAME}</td>
+                    <td data-label="사원코드">{row.USER_CODE}</td>
+                    <td data-label="사원명">{row.USER_NAME}</td>
                     <td data-label="부서명">{row.DEPT_NAME}</td>
+                    <td data-label="직위">{row.POSITION_CODE}</td>
+                    <td data-label="직책">{row.DUTY_CODE}</td>
+                    <td data-label="핸드폰">{row.MOBILE_NO}</td>
+                    <td data-label="EMAIL">{row.EMAIL}</td>
+                    <td data-label="사용">{row.USE_FLAG === '1' ? '사용' : '미사용'}</td>
+                    <td data-label="입사일자">{row.HIRE_DATE ? new Date(row.HIRE_DATE.toString()).toISOString().slice(0, 10) : ''}</td>
+                    <td data-label="퇴직일자">{row.RETIREMENT_DATE ? new Date(row.RETIREMENT_DATE.toString()).toISOString().slice(0, 10) : ''}</td>
                   </tr>
                 ))}
               </tbody>

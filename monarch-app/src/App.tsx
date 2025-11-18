@@ -19,16 +19,17 @@ const App: React.FC = () => {
 
       {/* ProtectedRoute는 로그인 페이지를 제외한 모든 페이지를 보호합니다. */}
       <Route element={<ProtectedRoute />}>
-        <Route element={<Layout />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/customers" element={<CustomerPage />} />
-          <Route path="/sales" element={<SalesPage />} />
-          <Route path="/contacts" element={<ContactPage />} />
-          <Route path="/users" element={<UserPage />} />
+        <Route element={<Layout/>}>
+          <Route path="/" element={<DashboardPage />} /> {/* 대시보드 */}
+          <Route path="/customer" element={<CustomerPage />} /> {/* 고객관리 */}
+          <Route path="/sales" element={<SalesPage />} /> {/* 영업관리 */}
+          <Route path="/sales/contact" element={<ContactPage />} /> {/* 접촉관리 */}
+          <Route path="/admin/users" element={<UserPage />} /> {/* 사용자관리 */}
+          <Route path="/admin/dev" element={<>개발정보</>} /> {/* 개발정보 */}
         </Route>
       </Route>
 
-      {/* 정의되지 않은 경로로 접근 시 기본 페이지로 리디렉션 */}
+      {/* 정의되지 않은 경로로 접근 시 기본 페이지로 리디렉션 (ProtectedRoute 내부에서 처리되므로 제거하거나 주석 처리) */}
       {/* 이 부분은 ProtectedRoute 내부에서 처리되므로 제거하거나 주석 처리할 수 있습니다. */}
       {/* <Route path="*" element={<Navigate to="/" />} /> */}
     </Routes>

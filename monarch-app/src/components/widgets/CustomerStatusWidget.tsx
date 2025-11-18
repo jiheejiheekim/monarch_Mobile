@@ -25,8 +25,8 @@ const CustomerStatusWidget: React.FC = () => {
                 const uid = user?.M_USER_NO || null;
                 const response = await axios.get('/api/data/execute', {
                     params: {
-                        serviceName: 'MS_CUST_INFO',
-                        methodName: 'STATUS',
+                        serviceName: 'M_CUST',
+                        methodName: 'CHART_LIST',
                         USITE: usite,
                         UID: uid,
                     }

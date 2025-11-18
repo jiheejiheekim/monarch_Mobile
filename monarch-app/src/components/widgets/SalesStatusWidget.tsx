@@ -24,8 +24,8 @@ const SalesStatusWidget: React.FC = () => {
                 const uid = user?.M_USER_NO || null;
                 const response = await axios.get('/api/data/execute', {
                     params: {
-                        serviceName: 'MS_SLS_INFO',
-                        methodName: 'STATUS',
+                        serviceName: 'M_SALES',
+                        methodName: 'CHART_LIST',
                         USITE: usite,
                         UID: uid,
                     }

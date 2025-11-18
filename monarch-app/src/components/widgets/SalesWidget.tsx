@@ -117,21 +117,25 @@ const SalesWidget: React.FC = () => {
                         <table className={styles.userDataTable}>
                             <thead>
                                 <tr>
+                                    <th>영업번호</th>
                                     <th>영업기회명</th>
                                     <th>고객사명</th>
                                     <th>담당자</th>
+                                    <th>예상수주일</th>
                                     <th>예상수주금액</th>
                                     <th>진행상태</th>
-                                </tr>
+                                </tr> 
                             </thead>
                             <tbody>
                                 {salesData.map((row, index) => (
                                     <tr key={index}>
+                                        <td data-label="영업번호" className={styles.textCenter}>{row.SALESID}</td>
                                         <td data-label="영업기회명">{row.SALENAME}</td>
-                                        <td data-label="고객사명">{row.CLINAME}</td>
-                                        <td data-label="담당자">{row.OWNER_NM}</td>
-                                        <td data-label="예상수주금액">{Number(row.FORDAMOUNT).toLocaleString()}</td>
-                                        <td data-label="진행상태">{row.SALESSTATE_NM}</td>
+                                        <td data-label="고객사명" className={styles.textCenter}>{row.CLINAME}</td>
+                                        <td data-label="담당자" className={styles.textCenter}>{row.OWNER_NM}</td>
+                                        <td data-label="예상수주일" className={styles.textCenter}>{row.FORDDATE ? new Date(row.FORDDATE.toString()).toISOString().slice(0, 10) : ''}</td>
+                                        <td data-label="예상수주금액" className={styles.textRight}>{Number(row.FORDAMOUNT).toLocaleString()}</td>
+                                        <td data-label="진행상태" className={styles.textCenter}>{row.SALESSTATE_NM}</td>
                                     </tr>
                                 ))}
                             </tbody>
