@@ -30,7 +30,8 @@ const SalesStatusWidget: React.FC = () => {
                         serviceName: 'M_SALES',
                         methodName: 'CHART_LIST',
                         USITE: usite,
-                        UID: uid, // _sort 파라미터는 백엔드 쿼리에서 직접 처리한다고 가정하고 제거
+                        UID: uid,
+                        _sort: 'SALESTATE ASC', // 정렬 조건 추가
                     }
                 });
 
