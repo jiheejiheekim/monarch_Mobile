@@ -84,7 +84,7 @@ const CustomerStatusWidget: React.FC = () => {
         <Widget title="고객 현황">
             {chartData.length > 1 ? (
                 <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                         <span></span> {/* 빈 span으로 공간 확보 */}
                         <button className={styles.widgetToggleButton} onClick={() => setShowTable(!showTable)}>{showTable ? '📊 차트만 보기' : '📋 데이터 보기'}</button>
                     </div> 
