@@ -4,11 +4,9 @@ import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardPage from './pages/DashboardPage';
-import CustomerPage from './pages/CustomerPage';
-import SalesPage from './pages/SalesPage';
-import ContactPage from './pages/ContactPage';
-import UserPage from './pages/UserPage';
 import StructureAdminPage from './pages/StructureAdminPage';
+import ServiceAdminPage from './pages/ServiceAdminPage'; // 'QueryAdminPage'를 'ServiceAdminPage'로 변경
+import DynamicGridPage from './pages/DynamicGridPage'; // 새로 만든 템플릿 페이지 import
 
 // MainPage는 이제 DashboardPage가 그 역할을 대신하므로 제거될 수 있습니다.
 // 만약 MainPage를 계속 사용하고 싶다면 DashboardPage 대신 MainPage를 사용하세요.
@@ -22,11 +20,11 @@ const App: React.FC = () => {
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout/>}>
           <Route path="/" element={<DashboardPage />} /> {/* 대시보드 */}
-          <Route path="/customer" element={<CustomerPage />} /> {/* 고객관리 */}
-          <Route path="/sales" element={<SalesPage />} /> {/* 영업관리 */}
-          <Route path="/sales/contact" element={<ContactPage />} /> {/* 접촉관리 */}
-          <Route path="/admin/users" element={<UserPage />} /> {/* 사용자관리 */}
-          <Route path="/admin/dev" element={<StructureAdminPage />} /> {/* 개발정보 */}
+          <Route path="/admin/dev" element={<StructureAdminPage />} /> {/* 기존 "개발정보" 경로 유지 */}
+          {/* 동적 라우트: :structureName 부분이 변수로 처리됩니다. */}
+          <Route path="/grid/:structureName" element={<DynamicGridPage />} />
+          <Route path="/admin/structure" element={<StructureAdminPage />} /> {/* "Structure정보" 페이지 경로 새로 추가 */}
+          <Route path="/admin/service" element={<ServiceAdminPage />} /> {/* "Service정보" 페이지 경로로 변경 */}
         </Route>
       </Route>
 

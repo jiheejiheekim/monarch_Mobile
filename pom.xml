@@ -1,115 +1,125 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<!-- Maven 모델 버전 -->
 	<modelVersion>4.0.0</modelVersion>
+	<!-- 부모 POM 설정. Spring Boot 프로젝트의 기본 설정을 상속받습니다. -->
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>3.5.7</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
+	<!-- 프로젝트의 고유 식별자 (Group ID) -->
 	<groupId>com.kydbm</groupId>
+	<!-- 프로젝트의 결과물 이름 (Artifact ID) -->
 	<artifactId>monarch</artifactId>
+	<!-- 프로젝트 버전 -->
 	<version>0.0.1-SNAPSHOT</version>
+	<!-- 패키징 방식 (jar, war 등) -->
 	<packaging>jar</packaging>
+	<!-- 프로젝트 이름 -->
 	<name>monarch</name>
+	<!-- 프로젝트 설명 -->
 	<description>MonArch project for Spring Boot</description>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
+
+	<!-- 프로젝트 속성 정의 -->
 	<properties>
+		<!-- 사용할 Java 버전 -->
 		<java.version>17</java.version>
 	</properties>
+	<!-- 프로젝트 의존성 관리 -->
 	<dependencies>
+		<!-- 스프링 부트 핵심 스타터: 자동 설정, 로깅, YAML 등 기본 기능 제공 -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter</artifactId>
 		</dependency>
+		<!-- Spring Data JPA 스타터: JPA, Hibernate를 사용한 데이터베이스 연동 지원 -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
+		<!-- Spring Security 스타터: 인증 및 권한 부여 기능 제공 -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
+		<!-- JDBC API 및 DataSource 지원 -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jdbc</artifactId>
 		</dependency>
+		<!-- Spring MVC를 사용한 웹 애플리케이션 개발 지원 (Tomcat 내장) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+		<!-- MyBatis 프레임워크와 스프링 부트 연동 지원 -->
 		<dependency>
 			<groupId>org.mybatis.spring.boot</groupId>
 			<artifactId>mybatis-spring-boot-starter</artifactId>
 			<version>3.0.3</version>
 		</dependency>
 
+		<!-- 스프링 부트 개발 도구: 자동 재시작, LiveReload 등 개발 편의 기능 제공 -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
 			<scope>runtime</scope>
 			<optional>true</optional>
 		</dependency>
+		<!-- Lombok: @Getter, @Setter, @ToString 등 어노테이션으로 boilerplate 코드 자동 생성 -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-tomcat</artifactId>
-		</dependency>
+		<!-- 스프링 부트 테스트 스타터: JUnit, Mockito 등 테스트 라이브러리 포함 -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- 리액티브 스트림 테스트 지원 -->
 		<dependency>
 			<groupId>io.projectreactor</groupId>
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Spring Batch 테스트 지원 -->
 		<dependency>
 			<groupId>org.springframework.batch</groupId>
 			<artifactId>spring-batch-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Spring Security 테스트 지원 -->
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Oracle JDBC 드라이버 및 관련 라이브러리(ucp, oraclepki 등) 포함 -->
+		<!-- 'pom' 타입을 사용하면 필요한 모든 jar 파일들이 함께 포함되어 MANIFEST 관련 경고를 해결할 수 있습니다. -->
 		<dependency>
 			<groupId>com.oracle.database.jdbc</groupId>
-			<artifactId>ojdbc11</artifactId>
-			<scope>runtime</scope>
+			<artifactId>ojdbc11-production</artifactId>
+			<version>23.4.0.24.05</version>
+			<type>pom</type>
 		</dependency>
-		<!-- JJWT API -->
+		<!-- JJWT (Java JWT): JWT 생성 및 검증을 위한 API -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
 			<version>0.12.5</version>
 		</dependency>
-		<!-- JJWT Implementation -->
+		<!-- JJWT (Java JWT): 핵심 구현체 -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-impl</artifactId>
 			<version>0.12.5</version>
 		</dependency>
-		<!-- JJWT Jackson (JSON processing) -->
+		<!-- JJWT (Java JWT): Jackson 라이브러리를 사용한 JSON 처리 지원 -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-jackson</artifactId>
@@ -117,13 +127,17 @@
 		</dependency>
 	</dependencies>
 
+	<!-- 빌드 관련 설정 -->
 	<build>
 		<plugins>
+			<!-- 스프링 부트 메이븐 플러그인: 실행 가능한 jar 파일 생성 등 지원 -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
+					<!-- 애플리케이션의 메인 클래스 지정 -->
 					<mainClass>com.kydbm.monarch.MonarchApplication</mainClass>
+					<!-- JVM 실행 인수 추가. Java 17+에서 리플렉션 관련 경고를 해결하기 위함 -->
 					<jvmArguments>
 						--add-opens java.base/java.util=ALL-UNNAMED
 					</jvmArguments>
