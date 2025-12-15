@@ -1,0 +1,30 @@
+--- Testing Hypothetical User Input ---
+{
+    "buttons": [
+		    { "label": "조회", 	"index": "List", 	"inComm": "List" },	
+		    { "label": "초기화", "index": "Init", 	"inComm": "initialize" },	
+		    // { "label": "추가", 
+            "index": "New", 	"inComm": "New" },	
+		    // { "label": "저장",
+            "index": "Save", 	"inComm": "Save" },	
+		    // { "label": "삭제",
+            "index": "Del", 	"inComm": "Delete" }
+	]
+}
+
+--- Parsing ---
+
+--- Old Regex Stripping Result ---
+{
+    "buttons": [
+		    { "label": "조회", 	"index": "List", 	"inComm": "List" },	
+		    { "label": "초기화", "index": "Init", 	"inComm": "initialize" },	
+		    
+            "index": "New", 	"inComm": "New" },	
+		    
+            "index": "Save", 	"inComm": "Save" },	
+		    
+            "index": "Del", 	"inComm": "Delete" }
+	]
+}
+Matches user log? true

@@ -1,0 +1,36 @@
+--- Running Test: User Case ---
+Input length: 349
+Stripped (first 100 chars): {\n    "buttons": [\n		    { "label": "조회", 	"index": "List", 	"inComm": "List" },	\n		    { "label": "...
+PARSE SUCCESS!
+--------------------------------
+
+--- Running Test: Simple Trailing Comma ---
+Input length: 9
+Stripped (first 100 chars): [ 1, 2]...
+PARSE SUCCESS!
+--------------------------------
+
+--- Running Test: Comments inside strings ---
+Input length: 60
+Stripped (first 100 chars): { "url": "http://example.com/foo", "pattern": "/* kept */" }...
+PARSE SUCCESS!
+--------------------------------
+
+--- Running Test: Empty Strings ---
+Input length: 10
+Stripped (first 100 chars): { "": "" }...
+PARSE SUCCESS!
+--------------------------------
+
+--- Running Test: Multi-line comment trailing comma ---
+Input length: 35
+Stripped (first 100 chars): {\n  "key": "value" }...
+PARSE SUCCESS!
+--------------------------------
+
+--- Running Test: Nested Structure ---
+Input length: 97
+Stripped (first 100 chars): [\n  "string", \n  {\n    "nested": true}]...
+PARSE SUCCESS!
+--------------------------------
+

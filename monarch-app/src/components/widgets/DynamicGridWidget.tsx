@@ -7,7 +7,7 @@ import PopupGrid from "./PopupGrid";
 import FilterButtons from "./FilterButtons";
 
 import {
-    useTheme, useMediaQuery, Box, Stack, TextField, Button,
+    useTheme, useMediaQuery, Box, Stack, TextField,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
     Card, CardContent, Typography, Pagination as MuiPagination, CircularProgress, Alert,
     Select, MenuItem, FormControl, InputLabel
@@ -45,6 +45,12 @@ interface ColGroup {
     Width: string;
 }
 
+export interface ButtonConfig {
+    label: string;
+    index: string;
+    inComm: string;
+}
+
 interface StructureConfig {
     title: string;
     colgroup?: ColGroup[];
@@ -54,6 +60,7 @@ interface StructureConfig {
     method: string;
     keyName: string;
     order: string;
+    buttons?: ButtonConfig[];
 }
 
 interface GridRow {
@@ -87,6 +94,26 @@ interface ProcessedRow {
 
 
 
+interface ProcessedRow {
+
+    key: string;
+
+    units: RenderableUnit[];
+
+}
+
+const parseConfig = (raw: unknown): StructureConfig => {
+    if (typeof raw === 'object' && raw !== null) return raw as StructureConfig;
+    try {
+        // parsing using new Function to allow comments and trailing commas
+        return new Function('return ' + String(raw))() as StructureConfig;
+    } catch (e) {
+        console.error("Config parse failed:", e);
+        console.log("Raw Config:", raw);
+        return {} as StructureConfig;
+    }
+};
+
 const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, onRowClick }) => {
 
     // --- State Management ---
@@ -105,7 +132,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
     const [pageSize, setPageSize] = useState(10);
 
-    
+
 
     // Unified state for all key-value filters
 
@@ -171,7 +198,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
             if (response.data?.structureCont) {
 
-                const parsedConfig = JSON.parse(response.data.structureCont);
+                const parsedConfig = parseConfig(response.data.structureCont);
 
                 if (!parsedConfig.colgroup || parsedConfig.colgroup.length === 0) {
                     parsedConfig.colgroup = [
@@ -180,15 +207,28 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
                         { "index": "Col3", "Width": "100%" }
                     ];
                 }
-        
-                if (parsedConfig.filterView && parsedConfig.filterView.length > 0 && !parsedConfig.filterView[0].TD) {
-                    const numCols = parsedConfig.colgroup.length;
-                    const newFilterView = [];
-                    for (let i = 0; i < parsedConfig.filterView.length; i += numCols) {
-                        const chunk = parsedConfig.filterView.slice(i, i + numCols);
-                        newFilterView.push({ TD: chunk });
+
+                if (parsedConfig.filterView && parsedConfig.filterView.length > 0) {
+                    const firstItem = parsedConfig.filterView[0];
+                    if (!('TD' in firstItem)) {
+                        const numCols = parsedConfig.colgroup?.length || 3;
+                        const newFilterView: FilterRow[] = [];
+                        // We know these are FilterItems because of the check above, but for TS safety we cast or trust the mixed array context
+                        const flatItems = parsedConfig.filterView as FilterItem[];
+
+                        for (let i = 0; i < flatItems.length; i += numCols) {
+                            const chunk = flatItems.slice(i, i + numCols);
+                            newFilterView.push({ TD: chunk });
+                        }
+                        parsedConfig.filterView = newFilterView;
                     }
-                    parsedConfig.filterView = newFilterView;
+                }
+
+                if (!parsedConfig.buttons || parsedConfig.buttons.length === 0) {
+                    parsedConfig.buttons = [
+                        { "label": "조회", "index": "List", "inComm": "List" },
+                        { "label": "초기화", "index": "Init", "inComm": "initialize" }
+                    ];
                 }
 
                 setStructureConfig(parsedConfig);
@@ -313,7 +353,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
     }, [structureConfig, currentPage, fetchData]);
 
-    
+
 
     // --- Filter Pre-processing ---
 
@@ -351,7 +391,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
             const groups = new Map<string, TextFilterItem[]>();
 
-            
+
 
             row.TD.forEach(item => {
 
@@ -381,7 +421,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
             });
 
-            
+
 
             const processedGroupNames = new Set<string>();
 
@@ -431,7 +471,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
         }).filter((r): r is ProcessedRow => r !== null);
 
-        
+
 
         return result;
 
@@ -451,163 +491,111 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
 
 
-        const handleSearch = () => {
+    const handleSearch = () => {
 
 
 
-            setCurrentPage(1);
+        setCurrentPage(1);
 
 
 
-            fetchData(1);
+        fetchData(1);
 
 
 
-        };
+    };
 
 
 
-    
 
 
 
-        const handleReset = () => {
 
+    const handleReset = () => {
 
 
-            setSearchFilters({});
 
+        setSearchFilters({});
 
 
-            setDateFilterValues({});
 
+        setDateFilterValues({});
 
 
-            setPopupFilterValues({});
 
+        setPopupFilterValues({});
 
 
-            setGroupSelections(initialGroupSelections);
 
+        setGroupSelections(initialGroupSelections);
 
 
-        };
 
+    };
 
 
-    
 
 
 
-        const handleDateFilterChange = (field: string, value: string, subField: 'from' | 'to') => {
 
 
+    const handleDateFilterChange = (field: string, value: string, subField: 'from' | 'to') => {
 
-            setDateFilterValues(prev => ({ ...prev, [field]: { ...prev[field], [subField]: value } }));
 
 
+        setDateFilterValues(prev => ({ ...prev, [field]: { ...prev[field], [subField]: value } }));
 
-        };
 
 
+    };
 
-        
 
 
 
-        const handleUngroupedFilterChange = (field: string, value: string) => {
 
 
 
-            setSearchFilters(prev => ({...prev, [field]: value}));
+    const handleUngroupedFilterChange = (field: string, value: string) => {
 
 
 
-        };
+        setSearchFilters(prev => ({ ...prev, [field]: value }));
 
 
 
-        
+    };
 
 
 
-        const handleGroupedSelectChange = (groupName: string, newSelectedField: string) => {
 
 
 
-            const oldSelectedField = groupSelections[groupName];
 
+    const handleGroupedSelectChange = (groupName: string, newSelectedField: string) => {
 
 
-            const currentValue = searchFilters[oldSelectedField] || '';
 
+        const oldSelectedField = groupSelections[groupName];
 
 
-    
 
+        const currentValue = searchFilters[oldSelectedField] || '';
 
 
-            setGroupSelections(prev => ({ ...prev, [groupName]: newSelectedField }));
 
 
 
-    
 
 
+        setGroupSelections(prev => ({ ...prev, [groupName]: newSelectedField }));
 
-            if (currentValue) {
 
 
 
-                setSearchFilters(prev => {
 
 
 
-                    const newFilters = { ...prev };
-
-
-
-                    delete newFilters[oldSelectedField];
-
-
-
-                    newFilters[newSelectedField] = currentValue;
-
-
-
-                    return newFilters;
-
-
-
-                });
-
-
-
-            }
-
-
-
-        };
-
-
-
-    
-
-
-
-        const handleGroupedValueChange = (groupName: string, newValue: string) => {
-
-
-
-            const selectedField = groupSelections[groupName];
-
-
-
-            if (!selectedField) return;
-
-
-
-    
+        if (currentValue) {
 
 
 
@@ -619,75 +607,11 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
 
 
-    
+                delete newFilters[oldSelectedField];
 
 
 
-                let groupItems: TextFilterItem[] = [];
-
-
-
-                for (const row of processedFilters) {
-
-
-
-                    const groupUnit = row.units.find(unit => unit.type === 'group' && unit.groupName === groupName) as { type: 'group'; items: TextFilterItem[] } | undefined;
-
-
-
-                    if (groupUnit) {
-
-
-
-                        groupItems = groupUnit.items;
-
-
-
-                        break;
-
-
-
-                    }
-
-
-
-                }
-
-
-
-    
-
-
-
-                // Clear all fields in this group
-
-
-
-                for (const item of groupItems) {
-
-
-
-                    delete newFilters[item.field];
-
-
-
-                }
-
-
-
-                // Set the value for the currently selected field
-
-
-
-                if (newValue) {
-
-
-
-                    newFilters[selectedField] = newValue;
-
-
-
-                }
+                newFilters[newSelectedField] = currentValue;
 
 
 
@@ -699,159 +623,67 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
 
 
-        };
-
-
-
-    
-
-
-
-        const handleOpenPopup = (filter: PopupFilter) => setActivePopup(filter);
-
-
-
-        const handleClosePopup = () => setActivePopup(null);
-
-
-
-    
-
-
-
-        const handlePopupSelect = (selectedRow: GridRow) => {
-
-
-
-            if (!activePopup) return;
-
-
-
-            const { field, popupKey, displayField } = activePopup;
-
-
-
-            setPopupFilterValues(prev => ({
-
-
-
-                ...prev,
-
-
-
-                [field]: { value: selectedRow[popupKey], display: selectedRow[displayField] as string }
-
-
-
-            }));
-
-
-
-        };
-
-
-
-        // --- Render Methods ---
-
-
-
-    
-
-
-
-        if (isLoading && !activePopup) {
-
-
-
-            return <Widget title={structureConfig?.title || "데이터 목록"}><CircularProgress /></Widget>;
-
-
-
         }
 
 
 
-        if (error) {
+    };
 
 
 
-            return <Widget title="오류"><Alert severity="error">{error}</Alert></Widget>;
 
 
 
-        }
+
+    const handleGroupedValueChange = (groupName: string, newValue: string) => {
 
 
 
-        if (!structureConfig) {
+        const selectedField = groupSelections[groupName];
 
 
 
-            return <Widget title="오류"><Alert severity="warning">화면 구성 정보를 찾을 수 없습니다.</Alert></Widget>;
+        if (!selectedField) return;
 
 
 
-        }
 
 
 
-    
+
+        setSearchFilters(prev => {
 
 
 
-        const renderFilterControl = (filter: FilterItem) => {
+            const newFilters = { ...prev };
 
 
 
-            const filterType = filter.type || 'text';
 
 
 
-            switch (filterType) {
+
+            let groupItems: TextFilterItem[] = [];
 
 
 
-                case 'dateBetween':
+            for (const row of processedFilters) {
 
 
 
-                    return (
+                const groupUnit = row.units.find(unit => unit.type === 'group' && unit.groupName === groupName) as { type: 'group'; items: TextFilterItem[] } | undefined;
 
 
 
-                        <Stack direction="row" spacing={1} alignItems="center">
+                if (groupUnit) {
 
 
 
-                            <TextField label={`${filter.label}_FROM`} type="date" variant="outlined" value={dateFilterValues[filter.field]?.from || ''} onChange={e => handleDateFilterChange(filter.field, e.target.value, 'from')} InputLabelProps={{ shrink: true }} fullWidth />
+                    groupItems = groupUnit.items;
 
 
 
-                            <Typography sx={{ mx: 1 }}>~</Typography>
-
-
-
-                            <TextField label={`${filter.label}_TO`} type="date" variant="outlined" value={dateFilterValues[filter.field]?.to || ''} onChange={e => handleDateFilterChange(filter.field, e.target.value, 'to')} InputLabelProps={{ shrink: true }} fullWidth />
-
-
-
-                        </Stack>
-
-
-
-                    );
-
-
-
-                case 'popup': {
-
-
-
-                    const popupFilter = filter as PopupFilter;
-
-
-
-                    return <PopupFilterInput filter={popupFilter} displayValue={popupFilterValues[popupFilter.field]?.display} onOpenPopup={() => handleOpenPopup(popupFilter)} onClear={() => setPopupFilterValues(p => ({ ...p, [popupFilter.field]: {} }))} />;
+                    break;
 
 
 
@@ -859,27 +691,23 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
 
 
-                case 'date':
+            }
 
 
 
-                case 'text':
 
 
 
-                default: // Handles ungrouped text filters
+
+            // Clear all fields in this group
 
 
 
-                    return (
+            for (const item of groupItems) {
 
 
 
-                        <TextField label={filter.label} variant="outlined" type={filterType === 'date' ? 'date' : 'search'} value={searchFilters[filter.field] || ''} onChange={e => handleUngroupedFilterChange(filter.field, e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSearch()} InputLabelProps={{ shrink: filterType === 'date' || !!searchFilters[filter.field] }} fullWidth />
-
-
-
-                    );
+                delete newFilters[item.field];
 
 
 
@@ -887,116 +715,330 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
 
 
-        };
+            // Set the value for the currently selected field
 
 
 
-    
+            if (newValue) {
 
 
 
-            const renderFilters = () => {
-            if (isMobile) { // Mobile layout
+                newFilters[selectedField] = newValue;
+
+
+
+            }
+
+
+
+            return newFilters;
+
+
+
+        });
+
+
+
+    };
+
+
+
+
+
+
+
+    const handleOpenPopup = (filter: PopupFilter) => setActivePopup(filter);
+
+
+
+    const handleClosePopup = () => setActivePopup(null);
+
+
+
+
+
+
+
+    const handlePopupSelect = (selectedRow: GridRow) => {
+
+
+
+        if (!activePopup) return;
+
+
+
+        const { field, popupKey, displayField } = activePopup;
+
+
+
+        setPopupFilterValues(prev => ({
+
+
+
+            ...prev,
+
+
+
+            [field]: { value: selectedRow[popupKey], display: selectedRow[displayField] as string }
+
+
+
+        }));
+
+
+
+    };
+
+
+
+    const handleButtonClick = (btn: ButtonConfig) => {
+        console.log('Button Clicked:', btn);
+        // Custom logic for other buttons can be added here
+        // e.g., if (btn.index === 'MyCustomAction') { ... }
+    };
+
+
+
+    // --- Render Methods ---
+
+
+
+
+
+
+
+    if (isLoading && !activePopup) {
+
+
+
+        return <Widget title={structureConfig?.title || "데이터 목록"}><CircularProgress /></Widget>;
+
+
+
+    }
+
+
+
+    if (error) {
+
+
+
+        return <Widget title="오류"><Alert severity="error">{error}</Alert></Widget>;
+
+
+
+    }
+
+
+
+    if (!structureConfig) {
+
+
+
+        return <Widget title="오류"><Alert severity="warning">화면 구성 정보를 찾을 수 없습니다.</Alert></Widget>;
+
+
+
+    }
+
+
+
+
+
+
+
+    const renderFilterControl = (filter: FilterItem) => {
+
+
+
+        const filterType = filter.type || 'text';
+
+
+
+        switch (filterType) {
+
+
+
+            case 'dateBetween':
+
+
+
                 return (
-                    <Paper sx={{ p: 2, mb: 2 }}>
-                        <Grid container gap={2}>
-                            {processedFilters.map(row => (
-                                // Each row will be a Grid item filling full width
-                                <Grid item xs={12} key={row.key}>
-                                    <Grid container gap={1}>
-                                        {row.units.map(unit => {
-                                            if (unit.type === 'group') {
-                                                const { groupName, items } = unit;
-                                                const selectedField = groupSelections[groupName] || items[0]?.field;
-                                                const value = searchFilters[selectedField] || '';
 
-                                                return (
-                                                    <Grid item xs={12} key={unit.key}>
-                                                        <Stack direction="column" spacing={1}>
-                                                            <FormControl variant="outlined" fullWidth>
-                                                                <InputLabel>검색항목</InputLabel>
-                                                                <Select value={selectedField} label="검색항목" onChange={e => handleGroupedSelectChange(groupName, e.target.value)}>
-                                                                    {items.map(item => <MenuItem key={item.field} value={item.field}>{item.label}</MenuItem>)}
-                                                                </Select>
-                                                            </FormControl>
-                                                            <TextField fullWidth label="검색어" variant="outlined" value={value} onChange={e => handleGroupedValueChange(groupName, e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSearch()} />
-                                                        </Stack>
-                                                    </Grid>
-                                                );
-                                            } else { // single
-                                                return (
-                                                    <Grid item xs={12} key={unit.key}>
-                                                        {renderFilterControl(unit.item)}
-                                                    </Grid>
-                                                );
-                                            }
-                                        })}
-                                    </Grid>
-                                </Grid>
-                            ))}
-                            <Grid item xs={12}>
-                                <FilterButtons onSearch={handleSearch} onReset={handleReset} />
-                            </Grid>
-                        </Grid>
-                    </Paper>
+
+
+                    <Stack direction="row" spacing={1} alignItems="center">
+
+
+
+                        <TextField label={`${filter.label}_FROM`} type="date" variant="outlined" value={dateFilterValues[filter.field]?.from || ''} onChange={e => handleDateFilterChange(filter.field, e.target.value, 'from')} InputLabelProps={{ shrink: true }} fullWidth />
+
+
+
+                        <Typography sx={{ mx: 1 }}>~</Typography>
+
+
+
+                        <TextField label={`${filter.label}_TO`} type="date" variant="outlined" value={dateFilterValues[filter.field]?.to || ''} onChange={e => handleDateFilterChange(filter.field, e.target.value, 'to')} InputLabelProps={{ shrink: true }} fullWidth />
+
+
+
+                    </Stack>
+
+
+
                 );
-            }
-    
-            // Desktop layout
-            const totalColumns = structureConfig?.colgroup?.length || 3;
 
+
+
+            case 'popup': {
+
+
+
+                const popupFilter = filter as PopupFilter;
+
+
+
+                return <PopupFilterInput filter={popupFilter} displayValue={popupFilterValues[popupFilter.field]?.display} onOpenPopup={() => handleOpenPopup(popupFilter)} onClear={() => setPopupFilterValues(p => ({ ...p, [popupFilter.field]: {} }))} />;
+
+
+
+            }
+
+
+
+            default: // Handles ungrouped text filters
+
+
+
+                return (
+
+
+
+                    <TextField label={filter.label} variant="outlined" type={filterType === 'date' ? 'date' : 'search'} value={searchFilters[filter.field] || ''} onChange={e => handleUngroupedFilterChange(filter.field, e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSearch()} InputLabelProps={{ shrink: filterType === 'date' || !!searchFilters[filter.field] }} fullWidth />
+
+
+
+                );
+
+
+
+        }
+
+
+
+    };
+
+
+
+
+
+
+
+    const renderFilters = () => {
+        if (isMobile) { // Mobile layout
             return (
-                <Paper sx={{ mb: 2, p: 2 }}>
-                    <Grid container spacing={2} alignItems="flex-start">
-                        {/* Filters Section */}
-                        <Grid item xs>
-                            <Stack spacing={1}>
-                                {processedFilters.map(row => (
-                                    <Grid container spacing={1} key={row.key} alignItems="center">
-                                        {row.units.map(unit => {
-                                            if (unit.type === 'group') {
-                                                const { groupName, items } = unit;
-                                                const selectedField = groupSelections[groupName] || items[0]?.field;
-                                                const selectedItem = items.find(item => item.field === selectedField);
-                                                const colspan = selectedItem?.colspan ? Number(selectedItem.colspan) : 1;
-                                                const mdSize = Math.max(1, Math.round((colspan / totalColumns) * 12));
-                                                const value = searchFilters[selectedField] || '';
-                                        
-                                                return (
-                                                    <Grid item xs={12} md={mdSize} key={unit.key}>
-                                                        <Stack direction="row" spacing={1} sx={{ width: '100%' }}>
-                                                            <FormControl variant="outlined" sx={{ minWidth: 150 }}>
-                                                                <InputLabel>검색항목</InputLabel>
-                                                                <Select value={selectedField} label="검색항목" onChange={e => handleGroupedSelectChange(groupName, e.target.value)}>
-                                                                    {items.map(item => <MenuItem key={item.field} value={item.field}>{item.label}</MenuItem>)}
-                                                                </Select>
-                                                            </FormControl>
-                                                            <TextField fullWidth label="검색어" variant="outlined" value={value} onChange={e => handleGroupedValueChange(groupName, e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSearch()} />
-                                                        </Stack>
-                                                    </Grid>
-                                                );
-                                            } else { // single
-                                                const colspan = unit.item.colspan ? Number(unit.item.colspan) : 1;
-                                                const mdSize = Math.max(1, Math.round((colspan / totalColumns) * 12));
-                                                return (
-                                                    <Grid item xs={12} md={mdSize} key={unit.key}>
-                                                        {renderFilterControl(unit.item)}
-                                                    </Grid>
-                                                );
-                                            }
-                                        })}
-                                    </Grid>
-                                ))}
-                            </Stack>
-                        </Grid>
-                        {/* Buttons Section */}
-                        <Grid item xs="auto" sx={{ alignSelf: 'center' }}>
-                            <FilterButtons onSearch={handleSearch} onReset={handleReset} />
+                <Paper sx={{ p: 2, mb: 2 }}>
+                    <Grid container gap={2}>
+                        {processedFilters.map(row => (
+                            // Each row will be a Grid item filling full width
+                            <Grid item xs={12} key={row.key}>
+                                <Grid container gap={1}>
+                                    {row.units.map(unit => {
+                                        if (unit.type === 'group') {
+                                            const { groupName, items } = unit;
+                                            const selectedField = groupSelections[groupName] || items[0]?.field;
+                                            const value = searchFilters[selectedField] || '';
+
+                                            return (
+                                                <Grid item xs={12} key={unit.key}>
+                                                    <Stack direction="column" spacing={1}>
+                                                        <FormControl variant="outlined" fullWidth>
+                                                            <InputLabel>검색항목</InputLabel>
+                                                            <Select value={selectedField} label="검색항목" onChange={e => handleGroupedSelectChange(groupName, e.target.value)}>
+                                                                {items.map(item => <MenuItem key={item.field} value={item.field}>{item.label}</MenuItem>)}
+                                                            </Select>
+                                                        </FormControl>
+                                                        <TextField fullWidth label="검색어" variant="outlined" value={value} onChange={e => handleGroupedValueChange(groupName, e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSearch()} />
+                                                    </Stack>
+                                                </Grid>
+                                            );
+                                        } else { // single
+                                            return (
+                                                <Grid item xs={12} key={unit.key}>
+                                                    {renderFilterControl(unit.item)}
+                                                </Grid>
+                                            );
+                                        }
+                                    })}
+                                </Grid>
+                            </Grid>
+                        ))}
+                        <Grid item xs={12}>
+                            <FilterButtons onSearch={handleSearch} onReset={handleReset} onButtonClick={handleButtonClick} isMobile={isMobile} buttons={structureConfig?.buttons} />
                         </Grid>
                     </Grid>
                 </Paper>
             );
-        };
+        }
+
+        // Desktop layout
+        const totalColumns = structureConfig?.colgroup?.length || 3;
+
+        return (
+            <Paper sx={{ mb: 2, p: 2 }}>
+                <Grid container spacing={2}>
+                    {/* Filters Section */}
+                    <Grid item xs={12}>
+                        <Stack spacing={1}>
+                            {processedFilters.map(row => (
+                                <Grid container spacing={1} key={row.key} alignItems="center" sx={{ width: '100%', m: 0 }}>
+                                    {row.units.map(unit => {
+                                        if (unit.type === 'group') {
+                                            const { groupName, items } = unit;
+                                            const selectedField = groupSelections[groupName] || items[0]?.field;
+                                            const selectedItem = items.find(item => item.field === selectedField);
+                                            const colspan = selectedItem?.colspan ? Number(selectedItem.colspan) : 1;
+                                            const mdSize = Math.max(1, Math.round((colspan / totalColumns) * 12));
+                                            const value = searchFilters[selectedField] || '';
+
+                                            return (
+                                                <Grid item xs={12} md={mdSize} key={unit.key}>
+                                                    <Stack direction="row" spacing={1} sx={{ width: '100%' }}>
+                                                        <FormControl variant="outlined" sx={{ minWidth: 150 }}>
+                                                            <InputLabel>검색항목</InputLabel>
+                                                            <Select value={selectedField} label="검색항목" onChange={e => handleGroupedSelectChange(groupName, e.target.value)}>
+                                                                {items.map(item => <MenuItem key={item.field} value={item.field}>{item.label}</MenuItem>)}
+                                                            </Select>
+                                                        </FormControl>
+                                                        <TextField fullWidth label="검색어" variant="outlined" value={value} onChange={e => handleGroupedValueChange(groupName, e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSearch()} />
+                                                    </Stack>
+                                                </Grid>
+                                            );
+                                        } else { // single
+                                            const colspan = unit.item.colspan ? Number(unit.item.colspan) : 1;
+                                            const mdSize = Math.max(1, Math.round((colspan / totalColumns) * 12));
+                                            return (
+                                                <Grid item xs={12} md={mdSize} key={unit.key}>
+                                                    {renderFilterControl(unit.item)}
+                                                </Grid>
+                                            );
+                                        }
+                                    })}
+                                </Grid>
+                            ))}
+                        </Stack>
+                    </Grid>
+                    {/* Buttons Section */}
+                    <Grid item xs={12}>
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <FilterButtons onSearch={handleSearch} onReset={handleReset} onButtonClick={handleButtonClick} isMobile={isMobile} buttons={structureConfig?.buttons} />
+                        </Box>
+                    </Grid>
+                </Grid>
+            </Paper>
+        );
+    };
 
     const renderDesktopView = () => (
         <TableContainer component={Paper}>

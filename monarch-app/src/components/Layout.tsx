@@ -63,6 +63,11 @@ const menuItems: MenuItem[] = [
         { name: 'Structure정보', path: '/admin/structure' },
         { name: 'Service정보', path: '/admin/service' }
     ] },
+    // 새로 추가된 대메뉴
+    { name: 'MY Sales Plan', icon: '📝', subItems: [
+        { name: '접촉영업건', structureName: '접촉영업건_MTBL' }
+    ] }
+
 ];
 
 /**
