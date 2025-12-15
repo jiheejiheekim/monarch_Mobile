@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import styles from './LoginPage.module.css'; // CSS 모듈 가져오기
@@ -6,12 +6,27 @@ import styles from './LoginPage.module.css'; // CSS 모듈 가져오기
 const LoginPage: React.FC = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const savedUsername = localStorage.getItem('rememberedUser');
+        if (savedUsername) {
+            setUsername(savedUsername);
+            setRememberMe(true);
+        }
+    }, []);
     
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+
+        if (rememberMe) {
+            localStorage.setItem('rememberedUser', username);
+        } else {
+            localStorage.removeItem('rememberedUser');
+        }
 
         // Spring Security의 formLogin은 application/x-www-form-urlencoded 형식을 사용합니다.
         // URLSearchParams를 사용하면 더 간결하게 표현할 수 있습니다.
@@ -63,6 +78,15 @@ const LoginPage: React.FC = () => {
                             onChange={(e) => setPassword(e.target.value)}
                             autoComplete="current-password"
                         />
+                    </div>
+                    <div className={styles.rememberMe}>
+                        <input
+                            id="rememberMe"
+                            type="checkbox"
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                        />
+                        <label htmlFor="rememberMe">Remember ID</label>
                     </div>
                     <button type="submit" className={styles.submitButton}>Login</button>
                 </form>

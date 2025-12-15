@@ -70,6 +70,22 @@
     background-color: #ffffff;
 }
 
+.rememberMe {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.rememberMe input {
+    margin-right: 8px;
+}
+
+.rememberMe label {
+    font-size: 14px;
+    color: #888;
+}
+
 .submitButton {
     width: 100%;
     padding: 14px 16px;

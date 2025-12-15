@@ -18,7 +18,7 @@ import { Grid } from '@mui/material';
 interface ColModel {
     label: string;
     field: string;
-    type: 'text' | 'date' | 'number';
+    type?: 'text' | 'date' | 'number';
     align: 'left' | 'center' | 'right';
     labelAlign?: 'left' | 'center' | 'right';
 }
@@ -26,7 +26,7 @@ interface ColModel {
 type BaseFilterItem = {
     label: string;
     field: string;
-    type: 'text' | 'select' | 'date' | 'dateBetween';
+    type?: 'text' | 'select' | 'date' | 'dateBetween';
     groupName?: string;
     colspan?: number | string;
 };
@@ -171,6 +171,24 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
             if (response.data?.structureCont) {
 
                 const parsedConfig = JSON.parse(response.data.structureCont);
+
+                if (!parsedConfig.colgroup || parsedConfig.colgroup.length === 0) {
+                    parsedConfig.colgroup = [
+                        { "index": "Col1", "Width": "100%" },
+                        { "index": "Col2", "Width": "100%" },
+                        { "index": "Col3", "Width": "100%" }
+                    ];
+                }
+        
+                if (parsedConfig.filterView && parsedConfig.filterView.length > 0 && !parsedConfig.filterView[0].TD) {
+                    const numCols = parsedConfig.colgroup.length;
+                    const newFilterView = [];
+                    for (let i = 0; i < parsedConfig.filterView.length; i += numCols) {
+                        const chunk = parsedConfig.filterView.slice(i, i + numCols);
+                        newFilterView.push({ TD: chunk });
+                    }
+                    parsedConfig.filterView = newFilterView;
+                }
 
                 setStructureConfig(parsedConfig);
 
@@ -581,7 +599,8 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
     }
 
     const renderFilterControl = (filter: FilterItem) => {
-        switch (filter.type) {
+        const filterType = filter.type || 'text';
+        switch (filterType) {
             case 'dateBetween':
                 return (
                     <Stack direction="row" spacing={1} alignItems="center">
@@ -598,7 +617,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
             case 'text':
             default: // Handles ungrouped text filters
                 return (
-                    <TextField label={filter.label} variant="outlined" type={filter.type === 'date' ? 'date' : 'search'} value={searchFilters[filter.field] || ''} onChange={e => handleUngroupedFilterChange(filter.field, e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSearch()} InputLabelProps={{ shrink: filter.type === 'date' || !!searchFilters[filter.field] }} fullWidth />
+                    <TextField label={filter.label} variant="outlined" type={filterType === 'date' ? 'date' : 'search'} value={searchFilters[filter.field] || ''} onChange={e => handleUngroupedFilterChange(filter.field, e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSearch()} InputLabelProps={{ shrink: filterType === 'date' || !!searchFilters[filter.field] }} fullWidth />
                 );
         }
     };
@@ -653,11 +672,11 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
             const totalColumns = structureConfig?.colgroup?.length || 3;
 
             return (
-                <Paper sx={{ mb: 2 }}>
-                    <Box sx={{ width: '100%' }}>
+                <Paper sx={{ mb: 2, p: 2 }}>
+                    <Box sx={{ width: '100%', overflowX: 'auto' }}>
                         <Stack spacing={1}>
                             {processedFilters.map(row => (
-                                <Grid container gap={2} key={row.key} alignItems="flex-start" sx={{ width: '100%', boxSizing: 'border-box' }}>
+                                <Grid container spacing={2} key={row.key} alignItems="flex-start" sx={{ width: '100%', boxSizing: 'border-box' }}>
                                     {row.units.map(unit => {
                                         if (unit.type === 'group') {
                                             const { groupName, items } = unit;
@@ -695,8 +714,8 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
                                     })}
                                 </Grid>
                             ))}
-                                                            <Grid container gap={2} justifyContent="flex-end" sx={{ width: '100%', boxSizing: 'border-box' }}>                                <Grid item>
-                                    <Button variant="contained" onClick={handleSearch} sx={{ height: '56px', width: { xs: '100%', md: 'auto' } }}>조회</Button>
+                                                            <Grid container spacing={2} justifyContent="flex-end" sx={{ width: '100%', boxSizing: 'border-box' }}>                                <Grid item>
+                                    <Button variant="contained" onClick={handleSearch} sx={{ padding: '16px 32px', width: { xs: '100%', md: 'auto' } }}>조회</Button>
                                 </Grid>
                             </Grid>
                         </Stack>
@@ -718,7 +737,8 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
                         <TableRow key={row[structureConfig.keyName]?.toString() ?? i} hover={!!onRowClick} onClick={() => onRowClick?.(row)} sx={{ cursor: onRowClick ? 'pointer' : 'default' }}>
                             {structureConfig.colModel.map(col => {
                                 const val = row[col.field];
-                                const displayVal = col.type === 'date' && val ? new Date(val as string).toISOString().slice(0, 10) : val;
+                                const colType = col.type || 'text';
+                                const displayVal = colType === 'date' && val ? new Date(val as string).toISOString().slice(0, 10) : val;
                                 return <TableCell key={col.field} align={col.align || 'left'}>{displayVal?.toString()}</TableCell>
                             })}
                         </TableRow>
@@ -737,7 +757,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
                             <Box key={col.field} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
                                 <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{col.label}</Typography>
                                 <Typography variant="body1">
-                                    {col.type === 'date' && row[col.field] ? new Date(row[col.field] as string).toISOString().slice(0, 10) : row[col.field]?.toString()}
+                                    {(col.type || 'text') === 'date' && row[col.field] ? new Date(row[col.field] as string).toISOString().slice(0, 10) : row[col.field]?.toString()}
                                 </Typography>
                             </Box>
                         ))}
