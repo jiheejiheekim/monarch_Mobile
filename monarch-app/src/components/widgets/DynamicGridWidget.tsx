@@ -674,9 +674,9 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
             return (
                 <Paper sx={{ mb: 2, p: 2 }}>
                     <Box sx={{ width: '100%', overflowX: 'auto' }}>
-                        <Stack spacing={1}>
+                        <Stack spacing={0.5}>
                             {processedFilters.map(row => (
-                                <Grid container spacing={2} key={row.key} alignItems="flex-start" sx={{ width: '100%', boxSizing: 'border-box' }}>
+                                <Grid container spacing={1} key={row.key} alignItems="flex-start" sx={{ width: '100%', boxSizing: 'border-box' }}>
                                     {row.units.map(unit => {
                                         if (unit.type === 'group') {
                                             const { groupName, items } = unit;
@@ -714,7 +714,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
                                     })}
                                 </Grid>
                             ))}
-                                                            <Grid container spacing={2} justifyContent="flex-end" sx={{ width: '100%', boxSizing: 'border-box' }}>                                <Grid item>
+                                                            <Grid container spacing={1} justifyContent="flex-end" sx={{ width: '100%', boxSizing: 'border-box' }}>                                <Grid item>
                                     <Button variant="contained" onClick={handleSearch} sx={{ padding: '16px 32px', width: { xs: '100%', md: 'auto' } }}>조회</Button>
                                 </Grid>
                             </Grid>
