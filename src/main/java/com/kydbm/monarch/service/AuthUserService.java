@@ -50,7 +50,7 @@ public class AuthUserService implements UserDetailsService {
         log.info("User '{}' found. Details: {}", username, userDetails);
 
         // 'khma' 사용자는 계정 잠금 정책에서 제외합니다. (개발/테스트용)
-        if (!"khma".equals(username)) {
+        if (!"khma".equals(username) || !"jihee2518".equals(username)) {
             Object failCntObj = userDetails.get("LOGIN_FAIL_CNT");
             // DB의 NUMBER 타입은 Java의 BigDecimal로 매핑될 수 있습니다.
             if (failCntObj instanceof BigDecimal && ((BigDecimal) failCntObj).intValue() >= 5) {
