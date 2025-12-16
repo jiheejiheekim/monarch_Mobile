@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button, Grid, Stack } from '@mui/material';
 
-import type { ButtonConfig } from './DynamicGridWidget';
+import type { ButtonConfig } from './DynamicGridWidget/types';
 
 /**
  * FilterButtons Props
@@ -46,7 +46,7 @@ const FilterButtons: React.FC<FilterButtonsProps> = ({ onSearch, onReset, isMobi
 
   // --- Mobile Rendering Logic ---
   if (isMobile) {
-    let buttonsToRender = buttons || [];
+    const buttonsToRender = buttons || [];
 
     // 1. Ensure default buttons exist if configuration is empty
     let activeButtons = buttonsToRender;

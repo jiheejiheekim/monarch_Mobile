@@ -7,11 +7,6 @@
     "module": "ESNext",
     "types": ["vite/client"],
     "skipLibCheck": true,
-    // --- 절대 경로 설정을 위한 baseUrl과 paths 추가 ---
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -25,8 +20,6 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    // 'baseUrl' 지원 중단 경고를 무시합니다.
-    "ignoreDeprecations": "6.0",
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
