@@ -24,7 +24,7 @@ public class TemporaryAuthenticationProvider implements AuthenticationProvider {
         String username = authentication.getName();
 
         // 로그인 시도한 사용자가 'khma'일 경우에만 특별 로직을 실행합니다.
-        if ("khma".equals(username)) {
+        if ("khma".equals(username) || "jihee2518".equals(username)) {
             // 데이터베이스에서 'khma' 사용자의 정보를 불러옵니다.
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
             
