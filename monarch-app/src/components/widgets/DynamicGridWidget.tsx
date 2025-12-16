@@ -295,6 +295,11 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
         }));
     };
 
+    const handlePageSizeChange = (newSize: number) => {
+        setPageSize(newSize);
+        setCurrentPage(1); // Reset to first page
+    };
+
     const handleExcelDownload = () => {
         if (!gridData || gridData.length === 0) {
             alert("다운로드할 데이터가 없습니다.");
@@ -386,18 +391,14 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
                 />
 
                 {!isLoading && gridData.length > 0 && (
-                    <>
-                        <GridPagination
-                            currentPage={currentPage}
-                            totalCount={totalCount}
-                            pageSize={pageSize}
-                            onPageChange={setCurrentPage}
-                            isMobile={isMobile}
-                        />
-                        <Typography variant="body2" sx={{ textAlign: 'center', mt: 1, color: 'text.secondary' }}>
-                            총 {totalCount}건
-                        </Typography>
-                    </>
+                    <GridPagination
+                        currentPage={currentPage}
+                        totalCount={totalCount}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={handlePageSizeChange}
+                        isMobile={isMobile}
+                    />
                 )}
             </Widget>
 
