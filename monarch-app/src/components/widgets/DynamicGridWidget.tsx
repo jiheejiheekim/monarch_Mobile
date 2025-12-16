@@ -24,18 +24,18 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import SearchIcon from '@mui/icons-material/Search';
 
 // ============================================================================
-// Type Definitions & Interfaces
+// 타입 정의 & 인터페이스
 // ============================================================================
 
 /**
- * Configuration for a single column in the grid.
- * @property label - Display name of the column header.
- * @property field - Data key corresponding to the row object.
- * @property type - Data type (text, date, number).
- * @property align - Text alignment for data cells.
- * @property labelAlign - Text alignment for header cells.
- * @property mobileImp - If 'true', this column is shown in the mobile card preview.
- * @property chip - If true, renders the value as a colored Chip badge.
+ * 그리드 컬럼 설정
+ * @property label - 컬럼 헤더 표시명
+ * @property field - 데이터 필드명
+ * @property type - 데이터 타입 (text, date, number)
+ * @property align - 데이터 셀 정렬
+ * @property labelAlign - 헤더 셀 정렬
+ * @property mobileImp - 'true'인 경우 모바일 카드에 표시
+ * @property chip - true인 경우 Chip 형태로 렌더링
  */
 interface ColModel {
     label: string;
@@ -69,11 +69,11 @@ interface ColGroup {
 }
 
 /**
- * Button configuration object.
- * @property label - Text to display on the button.
- * @property index - Unique identifier for the button.
- * @property inComm - Command identifier (e.g., 'List', 'initialize').
- * @property mobileAllow - "true" to show on mobile (except Search/Reset which are default).
+ * 버튼 설정
+ * @property label - 버튼 표시 텍스트
+ * @property index - 버튼 고유 식별자
+ * @property inComm - 명령 식별자 (예: 'List', 'initialize')
+ * @property mobileAllow - 모바일에서 표시 여부 (검색/초기화는 기본 표시)
  */
 export interface ButtonConfig {
     label: string;
@@ -83,8 +83,8 @@ export interface ButtonConfig {
 }
 
 /**
- * Main configuration structure for the Dynamic Grid.
- * Typically parsed from a definition string/object.
+ * Dynamic Grid 메인 설정
+ * 정의 문자열/객체에서 파싱됨
  */
 interface StructureConfig {
     title: string;
@@ -109,7 +109,7 @@ interface DynamicGridWidgetProps {
     onRowClick?: (row: GridRow) => void;
 }
 
-// --- Helper Types for Processed Filters ---
+// --- 필터 처리용 헬퍼 타입 ---
 
 type RenderableUnit =
     | { type: 'single'; item: FilterItem; key: string; }
@@ -129,13 +129,13 @@ interface ProcessedRow {
 
 
 /**
- * Safely parses the configuration string/object.
- * Uses `new Function` to handle relaxed JSON formats often used in legacy systems.
+ * 설정 문자열/객체를 안전하게 파싱
+ * 레거시 시스템에서 사용하는 유연한 JSON 형식을 처리하기 위해 new Function 사용
  */
 const parseConfig = (raw: unknown): StructureConfig => {
     if (typeof raw === 'object' && raw !== null) return raw as StructureConfig;
     try {
-        // parsing using new Function to allow comments and trailing commas
+        // 콤메트와 후행 쉽표를 허용하기 위해 new Function으로 파싱
         return new Function('return ' + String(raw))() as StructureConfig;
     } catch (e) {
         console.error("Config parse failed:", e);
@@ -146,10 +146,10 @@ const parseConfig = (raw: unknown): StructureConfig => {
 
 
 /**
- * Renders a cell value based on column configuration.
- * - Dates: Formatted to YYYY-MM-DD.
- * - Chips: Renders a colored MUI Chip.
- * - Default: String representation.
+ * 컬럼 설정에 따라 셀 값을 렌더링
+ * - 날짜: YYYY-MM-DD 형식으로 변환
+ * - Chip: 색상이 있는 MUI Chip으로 표시
+ * - 기본: 문자열로 표시
  */
 const renderValue = (col: ColModel, row: GridRow) => {
     const val = row[col.field];
@@ -160,7 +160,7 @@ const renderValue = (col: ColModel, row: GridRow) => {
     }
 
     if (col.chip && val) {
-        // Simple deterministic color generation based on string hash
+        // 문자열 해시 기반으로 결정적인 색상 생성
         const colors: ("default" | "primary" | "secondary" | "error" | "info" | "success" | "warning")[] =
             ["primary", "secondary", "success", "info", "warning", "error"];
         const hash = String(val).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -181,40 +181,40 @@ interface MobileGridCardProps {
 
 
 /**
- * Card Component for Mobile View.
+ * 모바일 뷰 카드 컴포넌트
  * 
- * Features:
- * - Expandable details.
- * - Header with primary column.
- * - Preview of 'important' columns (`mobileImp`).
- * - Toggleable collapse section for remaining columns.
+ * 기능:
+ * - 확장 가능한 상세 정보
+ * - 기본 컬럼을 헤더로 표시
+ * - 'mobileImp'가 true인 컬럼들을 미리보기로 표시
+ * - 나머지 컬럼들은 토글 가능한 collapse 영역에 표시
  */
 const MobileGridCard: React.FC<MobileGridCardProps> = ({ row, structureConfig, onRowClick }) => {
     const [expanded, setExpanded] = useState(false);
 
-    // Get columns
+    // 컬럼 가져오기
     const columns = structureConfig.colModel;
     if (columns.length === 0) return null;
 
-    // First column as Header Title
+    // 첫 번째 컬럼을 헤더 타이틀로 사용
     const titleCol = columns[0];
     const titleVal = row[titleCol.field]?.toString() || '-';
 
-    // Remaining columns to consider for body
+    // 본문에 표시할 나머지 컬럼들
     const otherCols = columns.slice(1);
 
-    // Check if any column has mobileImp set to true
+    // mobileImp가 true로 설정된 컬럼이 있는지 확인
     const hasImportant = otherCols.some(col => String(col.mobileImp) === 'true');
 
     let previewCols: ColModel[];
     let detailCols: ColModel[];
 
     if (hasImportant) {
-        // If mobileImp is used, split based on it
+        // mobileImp가 사용된 경우, 그것을 기준으로 분리
         previewCols = otherCols.filter(col => String(col.mobileImp) === 'true');
         detailCols = otherCols.filter(col => String(col.mobileImp) !== 'true');
     } else {
-        // If no mobileImp is found, show ALL remaining columns in preview
+        // mobileImp가 없으면, 모든 나머지 컬럼을 미리보기에 표시
         previewCols = otherCols;
         detailCols = [];
     }
@@ -311,18 +311,18 @@ const MobileGridCard: React.FC<MobileGridCardProps> = ({ row, structureConfig, o
 
 
 /**
- * DynamicGridWidget Component
+ * DynamicGridWidget 컴포넌트
  * 
- * A generalized Data Grid widget capable of:
- * 1. Fetching configuration dynamicallly (structureConfig).
- * 2. Generating search filters (Single inputs, Grouped selects, Date ranges, Popups).
- * 3. Fetching and displaying data in a paginated table or mobile card list.
- * 4. Handling Excel downloads.
- * 5. Providing responsive UX (Drawer filters on mobile, Expandable cards).
+ * 범용 데이터 그리드 위젯:
+ * 1. 동적으로 설정 가져오기 (structureConfig)
+ * 2. 검색 필터 생성 (단일 입력, 그룹 선택, 날짜 범위, 팝업)
+ * 3. 페이지네이션된 테이블 또는 모바일 카드 목록으로 데이터 표시
+ * 4. 엑셀 다운로드 처리
+ * 5. 반응형 UX 제공 (모바일에서 Drawer 필터, 확장 가능 카드)
  */
 const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, onRowClick }) => {
 
-    // --- State Management ---
+    // --- 상태 관리 ---
     const [structureConfig, setStructureConfig] = useState<StructureConfig | null>(null);
     const [gridData, setGridData] = useState<GridRow[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -334,11 +334,11 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
     // Unified state for all key-value filters
     const [searchFilters, setSearchFilters] = useState<{ [key: string]: string }>({});
 
-    // Mobile specific states
+    // 모바일 전용 상태
     const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
     const [showTopBtn, setShowTopBtn] = useState(false);
 
-    // Scroll listener for FAB
+    // 스크롤 리스너 (FAB용)
     useEffect(() => {
         const handleScroll = () => {
             if (window.scrollY > 10) {
@@ -355,13 +355,13 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // State for date range filters
+    // 날짜 범위 필터 상태
     const [dateFilterValues, setDateFilterValues] = useState<{ [key: string]: { from?: string, to?: string } }>({});
 
-    // State for popup filters
+    // 팝업 필터 상태
     const [popupFilterValues, setPopupFilterValues] = useState<{ [key: string]: { value?: FilterValue; display?: string } }>({});
 
-    // State to track selected field within a group
+    // 그룹 내 선택된 필드 추적
     const [groupSelections, setGroupSelections] = useState<{ [key: string]: string }>({});
     const [activePopup, setActivePopup] = useState<PopupFilter | null>(null);
 
@@ -375,7 +375,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
 
 
-    // --- Data Fetching ---
+    // --- 데이터 가져오기 ---
 
     const fetchStructure = useCallback(async () => {
         setIsLoading(true);
@@ -461,14 +461,14 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
             const uid = user?.M_USER_NO || null;
 
             /**
-             * State Unification for API Request:
+             * API 요청을 위한 상태 통합:
              * 
-             * We maintain 3 separate state objects for different filter types:
-             * 1. searchFilters: Standard text/select inputs.
-             * 2. dateFilterValues: Date range start/end values.
-             * 3. popupFilterValues: Values selected from popup modals.
+             * 다양한 필터 타입을 위해 3개의 별도 상태 객체를 유지:
+             * 1. searchFilters: 표준 텍스트/선택 입력
+             * 2. dateFilterValues: 날짜 범위 시작/종료 값
+             * 3. popupFilterValues: 팝업에서 선택된 값
              * 
-             * These are merged into `appliedFilters` below to form the final query parameters.
+             * 이것들은 아래에서 `appliedFilters`로 병합되어 최종 쿼리 파라미터를 구성함
              */
             const appliedFilters: { [key: string]: FilterValue } = { ...searchFilters };
 
@@ -510,24 +510,58 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
     useEffect(() => { fetchStructure(); }, [fetchStructure]);
 
 
+    // 설정이 로드되거나 페이지가 변경될 때 자동 fetch
+    // 참고: 필터 변경은 아래 debounced search effect에서 처리함
     useEffect(() => {
         if (structureConfig) {
             fetchData(currentPage);
         }
-    }, [structureConfig, currentPage, fetchData]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [structureConfig, currentPage]);
 
 
-    // --- Filter Pre-processing ---
+    // Debounced 자동 검색: 필터 변경 시 트리거
+    // 텍스트 필터가 2글자 이상일 때만 자동 검색
+    useEffect(() => {
+        if (!structureConfig) return;
+
+        // 2글자 이상의 검색 필터 값이 있는지 확인
+        const hasValidSearchFilter = Object.values(searchFilters).some(
+            value => value && value.length >= 2
+        );
+
+        // 날짜 필터 또는 팝업 필터에 값이 있는지 확인
+        const hasDateFilter = Object.values(dateFilterValues).some(
+            dates => dates.from || dates.to
+        );
+        const hasPopupFilter = Object.values(popupFilterValues).some(
+            popup => popup.value
+        );
+
+        // 유효한 필터가 있을 때만 debounced 검색 트리거
+        if (hasValidSearchFilter || hasDateFilter || hasPopupFilter) {
+            const timeoutId = setTimeout(() => {
+                setCurrentPage(1);
+                fetchData(1);
+            }, 1000); // 1000ms (1초) debounce 대기 시간
+
+            return () => clearTimeout(timeoutId);
+        }
+    }, [searchFilters, dateFilterValues, popupFilterValues, structureConfig, fetchData]);
+
+
+
+    // --- 필터 전처리 ---
     const { processedFilters, initialGroupSelections } = useMemo(() => {
         /**
-         * Filter Grouping Logic:
+         * 필터 그룹화 로직:
          * 
-         * The backend defines filters in a potentially flat or row-based structure.
-         * We group filters that share the same `groupName` (e.g., "Category", "SubCategory")
-         * so they can be rendered together in a single UI block or Select dropdown.
+         * 백엔드는 필터를 평면 또는 행 기반 구조로 정의함
+         * 동일한 `groupName`을 공유하는 필터들을 그룹화하여
+         * 단일 UI 블록 또는 Select 드롭다운으로 함께 렌더링함
          * 
-         * - Single Filters: Rendered as standard inputs.
-         * - Grouped Filters: Rendered as a Select (to choose field) + Input (to enter value).
+         * - 단일 필터: 표준 입력으로 렌더링
+         * - 그룹 필터: Select(필드 선택) + Input(값 입력)으로 렌더링
          */
         const result: {
             processedFilters: ProcessedRow[];
@@ -604,7 +638,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
     }, [initialGroupSelections]);
 
 
-    // --- Event Handlers ---
+    // --- 이벤트 핸들러 ---
 
 
     const handleSearch = () => {
@@ -645,6 +679,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
     const handleGroupedValueChange = (groupName: string, newValue: string) => {
         const selectedField = groupSelections[groupName];
+
         if (!selectedField) return;
 
         setSearchFilters(prev => {
@@ -659,12 +694,12 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
                 }
             }
 
-            // Clear all fields in this group
+            // 그룹 내 모든 필드 초기화
             for (const item of groupItems) {
                 delete newFilters[item.field];
             }
 
-            // Set the value for the currently selected field
+            // 현재 선택된 필드에 값 설정
             if (newValue) {
                 newFilters[selectedField] = newValue;
             }
@@ -726,7 +761,6 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
     };
 
     const handleButtonClick = (btn: ButtonConfig) => {
-        console.log('Button Clicked:', btn);
         if (btn.index === 'excelDown') {
             if (window.confirm("엑셀 파일을 다운로드 하시겠습니까?")) {
                 handleExcelDownload();
@@ -737,7 +771,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
     };
 
 
-    // --- Render Methods ---
+    // --- 렌더 메서드 ---
 
 
     if (isLoading && !activePopup) {
