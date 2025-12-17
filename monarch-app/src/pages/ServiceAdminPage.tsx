@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import styles from './LoginPage.module.css'; // 간단한 스타일 재사용
-import Widget from '@/components/Widget';
+import Widget from '@/components/Widget.tsx';
 
 /**
  * API 응답 데이터의 타입을 정의합니다.

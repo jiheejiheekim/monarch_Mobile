@@ -3,7 +3,7 @@ import {
     Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
     Skeleton, Stack, Card, useTheme, Chip
 } from '@mui/material';
-import type { StructureConfig, GridRow, ColModel } from './types';
+import type { StructureConfig, GridRow } from './types';
 import { MobileGridCard } from './MobileGridCard';
 import { renderValue } from './utils';
 
