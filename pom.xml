@@ -15,7 +15,7 @@
 	<!-- 프로젝트의 결과물 이름 (Artifact ID) -->
 	<artifactId>monarch</artifactId>
 	<!-- 프로젝트 버전 -->
-	<version>0.0.1-SNAPSHOT</version>
+	<version>10.0.1</version>
 	<!-- 패키징 방식 (jar, war 등) -->
 	<packaging>war</packaging>
 	<!-- 프로젝트 이름 -->
@@ -65,7 +65,7 @@
 		<dependency>
 			<groupId>org.mybatis.spring.boot</groupId>
 			<artifactId>mybatis-spring-boot-starter</artifactId>
-			<version>3.0.3</version>
+			<version>4.0.0</version>
 		</dependency>
 
 		<!-- 스프링 부트 개발 도구: 자동 재시작, LiveReload 등 개발 편의 기능 제공 -->
@@ -105,36 +105,53 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		
 		<!-- Oracle JDBC 드라이버 및 관련 라이브러리(ucp, oraclepki 등) 포함 -->
-		<!-- 'pom' 타입을 사용하면 필요한 모든 jar 파일들이 함께 포함되어 MANIFEST 관련 경고를 해결할 수 있습니다. -->
+		<!-- 외부 Maven 저장소 접근이 가능할 경우:
+			'ojdbc11-production' POM 타입을 사용하면 ojdbc11.jar, ucp.jar, oraclepki.jar 등
+			필요한 모든 라이브러리가 함께 포함되어 MANIFEST 관련 경고를 해결할 수 있음. -->
+		
 		<dependency>
 			<groupId>com.oracle.database.jdbc</groupId>
 			<artifactId>ojdbc11-production</artifactId>
-			<version>23.4.0.24.05</version>
+			<version>23.26.0.0.0</version>
 			<type>pom</type>
 		</dependency>
+		
+		<!-- 방화벽 내부 환경(외부 Maven 접근 불가)일 경우:
+			프로젝트 내 lib 폴더에 ojdbc11.jar 파일을 직접 포함시켜 사용.
+			예: src/main/resources/lib/ojdbc11.jar -->
+		<!-- <dependency>
+			<groupId>com.oracle.database.jdbc</groupId>
+			<artifactId>ojdbc11</artifactId>
+			<version>23.26.0.0.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/src/main/resources/lib/ojdbc11.jar</systemPath>
+		</dependency> -->
+
 		<!-- JJWT (Java JWT): JWT 생성 및 검증을 위한 API -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
-			<version>0.12.5</version>
+			<version>0.13.0</version>
 		</dependency>
 		<!-- JJWT (Java JWT): 핵심 구현체 -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-impl</artifactId>
-			<version>0.12.5</version>
+			<version>0.13.0</version>
 		</dependency>
 		<!-- JJWT (Java JWT): Jackson 라이브러리를 사용한 JSON 처리 지원 -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-jackson</artifactId>
-			<version>0.12.5</version>
+			<version>0.13.0</version>
 		</dependency>
 	</dependencies>
 
 	<!-- 빌드 관련 설정 -->
 	<build>
+		<finalName>ROOT</finalName>
 		<plugins>
 			<!-- 스프링 부트 메이븐 플러그인: 실행 가능한 jar 파일 생성 등 지원 -->
 			<plugin>
@@ -148,6 +165,73 @@
 						--add-opens java.base/java.util=ALL-UNNAMED
 					</jvmArguments>
 				</configuration>
+			</plugin>
+
+			<!-- Frontend Maven Plugin: React 앱 빌드 자동화 -->
+			<plugin>
+				<groupId>com.github.eirslett</groupId>
+				<artifactId>frontend-maven-plugin</artifactId>
+				<version>1.15.0</version>
+				<configuration>
+					<!-- 프론트엔드 프로젝트 디렉토리 -->
+					<workingDirectory>monarch-app</workingDirectory>
+					<!-- 사용할 Node.js와 npm 버전 -->
+					<nodeVersion>v20.19.0</nodeVersion>
+					<npmVersion>10.2.4</npmVersion>
+				</configuration>
+				<executions>
+					<!-- npm install 실행 -->
+					<execution>
+						<id>install node and npm</id>
+						<goals>
+							<goal>install-node-and-npm</goal>
+						</goals>
+					</execution>
+					<!-- npm install 실행 -->
+					<execution>
+						<id>npm install</id>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<configuration>
+							<arguments>install</arguments>
+						</configuration>
+					</execution>
+					<!-- npm run build 실행 -->
+					<execution>
+						<id>npm run build</id>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<configuration>
+							<arguments>run build</arguments>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Maven Resources Plugin: 빌드된 프론트엔드 파일을 static 폴더로 복사 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-react-build</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.basedir}/src/main/resources/static</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${project.basedir}/monarch-app/dist</directory>
+									<filtering>false</filtering>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

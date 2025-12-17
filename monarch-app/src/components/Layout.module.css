@@ -344,7 +344,7 @@ input:checked + .slider:before {
 /* PC에서는 hover, 모바일에서는 .open 클래스로 서브메뉴 제어 */
 .menuItem:hover .submenu,
 .menuItem.open .submenu {
-    max-height: 200px; /* 서브메뉴 항목 수에 따라 조절 */
+    max-height: 600px; /* 서브메뉴 항목 수에 따라 조절 */
 }
 
 .menuItem.open .arrowIcon {
