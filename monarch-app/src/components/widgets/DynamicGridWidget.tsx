@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import axios from 'axios';
 
 // --- Child Components ---
@@ -165,28 +165,30 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
     useEffect(() => { fetchStructure(); }, [fetchStructure]);
 
+    const fetchDataRef = useRef(fetchData);
+    fetchDataRef.current = fetchData;
+
     useEffect(() => {
         if (structureConfig) {
-            fetchData(currentPage);
+            fetchDataRef.current(currentPage);
         }
-    }, [structureConfig, currentPage, fetchData]);
+    }, [structureConfig, currentPage]);
 
     // --- Debounced Search ---
     useEffect(() => {
-        if (!structureConfig || isLoading) return;
+        if (!structureConfig) return;
 
-        const hasFilters = Object.values(searchFilters).some(v => v) ||
-            Object.values(dateFilterValues).some(v => v.from || v.to) ||
-            Object.values(popupFilterValues).some(v => v.value);
+        const timeoutId = setTimeout(() => {
+            if (currentPage !== 1) {
+                setCurrentPage(1);
+            } else {
+                fetchData(1);
+            }
+        }, 1000);
 
-        if (hasFilters) {
-            const timeoutId = setTimeout(() => {
-                if (currentPage !== 1) setCurrentPage(1);
-                else fetchData(1);
-            }, 500);
-            return () => clearTimeout(timeoutId);
-        }
-    }, [searchFilters, dateFilterValues, popupFilterValues, structureConfig, currentPage, fetchData, isLoading]);
+        return () => clearTimeout(timeoutId);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchFilters, dateFilterValues, popupFilterValues]);
 
     // --- 필터 전처리 ---
     const { processedFilters, initialGroupSelections } = useMemo((): {
@@ -258,42 +260,46 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
         if (currentPage !== 1) setCurrentPage(1);
     };
 
-    const handleDateFilterChange = (field: string, value: string, subField: 'from' | 'to') => {
+    const handleDateFilterChange = useCallback((field: string, value: string, subField: 'from' | 'to') => {
         setDateFilterValues(prev => ({ ...prev, [field]: { ...prev[field], [subField]: value } }));
-    };
+    }, []);
 
-    const handleUngroupedFilterChange = (field: string, value: string) => {
+    const handleUngroupedFilterChange = useCallback((field: string, value: string) => {
         setSearchFilters(prev => ({ ...prev, [field]: value }));
-    };
+    }, []);
 
-    const handleGroupedSelectChange = (groupName: string, newSelectedField: string) => {
-        const oldSelectedField = groupSelections[groupName];
-        const currentValue = searchFilters[oldSelectedField] || '';
+    const handleGroupedSelectChange = useCallback((groupName: string, newSelectedField: string) => {
+        setSearchFilters(prev => {
+            const oldSelectedField = groupSelections[groupName];
+            const currentValue = prev[oldSelectedField] || '';
+            if (!currentValue) return prev;
+
+            const newFilters = { ...prev };
+            delete newFilters[oldSelectedField];
+            newFilters[newSelectedField] = currentValue;
+            return newFilters;
+        });
         setGroupSelections(prev => ({ ...prev, [groupName]: newSelectedField }));
-        if (currentValue) {
-            setSearchFilters(prev => {
-                const newFilters = { ...prev };
-                delete newFilters[oldSelectedField];
-                newFilters[newSelectedField] = currentValue;
-                return newFilters;
-            });
-        }
-    };
+    }, [groupSelections]);
 
-    const handleGroupedValueChange = (groupName: string, newValue: string) => {
+    const handleGroupedValueChange = useCallback((groupName: string, newValue: string) => {
         const selectedField = groupSelections[groupName];
         if (!selectedField) return;
         setSearchFilters(prev => ({ ...prev, [selectedField]: newValue }));
-    };
+    }, [groupSelections]);
 
-    const handlePopupSelect = (selectedRow: GridRow) => {
+    const handlePopupSelect = useCallback((selectedRow: GridRow) => {
         if (!activePopup) return;
         const { field, popupKey, displayField } = activePopup;
         setPopupFilterValues(prev => ({
             ...prev,
             [field]: { value: selectedRow[popupKey], display: selectedRow[displayField] as string }
         }));
-    };
+    }, [activePopup]);
+
+    const handlePopupClear = useCallback((field: string) => {
+        setPopupFilterValues(p => ({ ...p, [field]: {} }));
+    }, []);
 
     const handlePageSizeChange = (newSize: number) => {
         setPageSize(newSize);
@@ -357,7 +363,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
             onGroupedValueChange={handleGroupedValueChange}
             onDateFilterChange={handleDateFilterChange}
             onPopupOpen={setActivePopup}
-            onPopupClear={(field) => setPopupFilterValues(p => ({ ...p, [field]: {} }))}
+            onPopupClear={handlePopupClear}
             onSearch={handleSearch}
             onReset={handleReset}
             onButtonClick={handleButtonClick}
