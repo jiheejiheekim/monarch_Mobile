@@ -105,14 +105,30 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		
 		<!-- Oracle JDBC 드라이버 및 관련 라이브러리(ucp, oraclepki 등) 포함 -->
-		<!-- 'pom' 타입을 사용하면 필요한 모든 jar 파일들이 함께 포함되어 MANIFEST 관련 경고를 해결할 수 있습니다. -->
+		<!-- 외부 Maven 저장소 접근이 가능할 경우:
+			'ojdbc11-production' POM 타입을 사용하면 ojdbc11.jar, ucp.jar, oraclepki.jar 등
+			필요한 모든 라이브러리가 함께 포함되어 MANIFEST 관련 경고를 해결할 수 있음. -->
+		<!--
 		<dependency>
 			<groupId>com.oracle.database.jdbc</groupId>
 			<artifactId>ojdbc11-production</artifactId>
 			<version>23.4.0.24.05</version>
 			<type>pom</type>
 		</dependency>
+		-->
+		<!-- 방화벽 내부 환경(외부 Maven 접근 불가)일 경우:
+			프로젝트 내 lib 폴더에 ojdbc11.jar 파일을 직접 포함시켜 사용.
+			예: src/main/resources/lib/ojdbc11.jar -->
+		<dependency>
+			<groupId>com.oracle.database.jdbc</groupId>
+			<artifactId>ojdbc11</artifactId>
+			<version>23.4.0.24.05</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/src/main/resources/lib/ojdbc11.jar</systemPath>
+		</dependency>
+
 		<!-- JJWT (Java JWT): JWT 생성 및 검증을 위한 API -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
