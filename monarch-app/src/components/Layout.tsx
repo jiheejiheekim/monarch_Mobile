@@ -59,7 +59,7 @@ const menuItems: MenuItem[] = [
     ] },
     // 새로 추가된 대메뉴
     { name: 'MY Sales Plan', icon: '📝', subItems: [
-        { name: '접촉영업건', structureName: '접촉영업건_MTBL' },
+        { name: '접촉계획고객', structureName: '접촉계획고객_MTBL' },
         { name: 'Overdue', structureName: '접촉영업건_MTBL' },
         { name: '신규영업건', structureName: '접촉영업건_MTBL' },
         { name: '리드영업건', structureName: '접촉영업건_MTBL' },
