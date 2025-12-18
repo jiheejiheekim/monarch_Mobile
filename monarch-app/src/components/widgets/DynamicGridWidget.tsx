@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 
 // --- Child Components ---
@@ -165,14 +165,11 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
     useEffect(() => { fetchStructure(); }, [fetchStructure]);
 
-    const fetchDataRef = useRef(fetchData);
-    fetchDataRef.current = fetchData;
-
     useEffect(() => {
         if (structureConfig) {
-            fetchDataRef.current(currentPage);
+            fetchData(currentPage);
         }
-    }, [structureConfig, currentPage]);
+    }, [structureConfig, currentPage, fetchData]);
 
     // --- Debounced Search ---
     useEffect(() => {
@@ -260,46 +257,42 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
         if (currentPage !== 1) setCurrentPage(1);
     };
 
-    const handleDateFilterChange = useCallback((field: string, value: string, subField: 'from' | 'to') => {
+    const handleDateFilterChange = (field: string, value: string, subField: 'from' | 'to') => {
         setDateFilterValues(prev => ({ ...prev, [field]: { ...prev[field], [subField]: value } }));
-    }, []);
+    };
 
-    const handleUngroupedFilterChange = useCallback((field: string, value: string) => {
+    const handleUngroupedFilterChange = (field: string, value: string) => {
         setSearchFilters(prev => ({ ...prev, [field]: value }));
-    }, []);
+    };
 
-    const handleGroupedSelectChange = useCallback((groupName: string, newSelectedField: string) => {
-        setSearchFilters(prev => {
-            const oldSelectedField = groupSelections[groupName];
-            const currentValue = prev[oldSelectedField] || '';
-            if (!currentValue) return prev;
-
-            const newFilters = { ...prev };
-            delete newFilters[oldSelectedField];
-            newFilters[newSelectedField] = currentValue;
-            return newFilters;
-        });
+    const handleGroupedSelectChange = (groupName: string, newSelectedField: string) => {
+        const oldSelectedField = groupSelections[groupName];
+        const currentValue = searchFilters[oldSelectedField] || '';
         setGroupSelections(prev => ({ ...prev, [groupName]: newSelectedField }));
-    }, [groupSelections]);
+        if (currentValue) {
+            setSearchFilters(prev => {
+                const newFilters = { ...prev };
+                delete newFilters[oldSelectedField];
+                newFilters[newSelectedField] = currentValue;
+                return newFilters;
+            });
+        }
+    };
 
-    const handleGroupedValueChange = useCallback((groupName: string, newValue: string) => {
+    const handleGroupedValueChange = (groupName: string, newValue: string) => {
         const selectedField = groupSelections[groupName];
         if (!selectedField) return;
         setSearchFilters(prev => ({ ...prev, [selectedField]: newValue }));
-    }, [groupSelections]);
+    };
 
-    const handlePopupSelect = useCallback((selectedRow: GridRow) => {
+    const handlePopupSelect = (selectedRow: GridRow) => {
         if (!activePopup) return;
         const { field, popupKey, displayField } = activePopup;
         setPopupFilterValues(prev => ({
             ...prev,
             [field]: { value: selectedRow[popupKey], display: selectedRow[displayField] as string }
         }));
-    }, [activePopup]);
-
-    const handlePopupClear = useCallback((field: string) => {
-        setPopupFilterValues(p => ({ ...p, [field]: {} }));
-    }, []);
+    };
 
     const handlePageSizeChange = (newSize: number) => {
         setPageSize(newSize);
@@ -363,7 +356,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
             onGroupedValueChange={handleGroupedValueChange}
             onDateFilterChange={handleDateFilterChange}
             onPopupOpen={setActivePopup}
-            onPopupClear={handlePopupClear}
+            onPopupClear={(field) => setPopupFilterValues(p => ({ ...p, [field]: {} }))}
             onSearch={handleSearch}
             onReset={handleReset}
             onButtonClick={handleButtonClick}
