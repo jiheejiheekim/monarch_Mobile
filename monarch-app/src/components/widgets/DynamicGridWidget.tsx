@@ -118,7 +118,11 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
         }
     }, [structureName]);
 
-    const fetchData = useCallback(async (page: number) => {
+    const fetchData = useCallback(async (page: number, currentFilters: {
+        search: Record<string, string>,
+        date: Record<string, { from?: string, to?: string }>,
+        popup: Record<string, { value?: FilterValue; display?: string }>
+    }) => {
         if (!structureConfig) return;
         setIsLoading(true);
         setError(null);
@@ -129,12 +133,12 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
             const usite = user?.M_USITE_NO || 1;
             const uid = user?.M_USER_NO || null;
 
-            const appliedFilters: Record<string, FilterValue> = { ...searchFilters };
-            Object.entries(dateFilterValues).forEach(([field, dates]) => {
+            const appliedFilters: Record<string, FilterValue> = { ...currentFilters.search };
+            Object.entries(currentFilters.date).forEach(([field, dates]) => {
                 if (dates.from) appliedFilters[`${field}_FROM`] = dates.from;
                 if (dates.to) appliedFilters[`${field}_TO`] = dates.to;
             });
-            Object.entries(popupFilterValues).forEach(([field, popupValue]) => {
+            Object.entries(currentFilters.popup).forEach(([field, popupValue]) => {
                 if (popupValue.value) appliedFilters[field] = popupValue.value;
             });
 
@@ -161,31 +165,52 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
         } finally {
             setIsLoading(false);
         }
-    }, [structureConfig, searchFilters, dateFilterValues, popupFilterValues, pageSize]);
+    }, [structureConfig, pageSize]);
 
     useEffect(() => { fetchStructure(); }, [fetchStructure]);
 
     useEffect(() => {
         if (structureConfig) {
-            fetchData(currentPage);
+            const currentFilters = { search: searchFilters, date: dateFilterValues, popup: popupFilterValues };
+            fetchData(currentPage, currentFilters);
         }
-    }, [structureConfig, currentPage, fetchData]);
+        // fetchData가 필터 상태에 더 이상 의존하지 않으므로, 이 effect는 이제 페이지 변경 시에만 실행됩니다.
+        // 필터 변경은 아래의 디바운스된 useEffect에서만 처리됩니다.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [structureConfig, currentPage]);
 
     // --- Debounced Search ---
+    // Who: Developer
+    // What: Stabilize the filter dependency for the debouncing effect.
+    // Why: Filter state objects are re-created on every render. Using them directly as dependencies
+    //      caused the debounce effect to re-trigger after its own state update (setCurrentPage),
+    //      leading to a second, unwanted data fetch. By converting the filters to a stable JSON string,
+    //      the effect only runs when the filter *content* actually changes, not just on re-renders.
+    const filtersString = useMemo(() => JSON.stringify({ searchFilters, dateFilterValues, popupFilterValues }), [searchFilters, dateFilterValues, popupFilterValues]);
+
     useEffect(() => {
         if (!structureConfig) return;
 
+        // This prevents the debounced search from running on the very first page load,
+        // as the initial data fetch is handled by another useEffect triggered by structureConfig loading.
+        const isInitialLoad = currentPage === 1 && Object.values(searchFilters).every(v => !v) && Object.values(dateFilterValues).every(v => !v.from && !v.to) && Object.values(popupFilterValues).every(v => !v.value);
+        if (isInitialLoad && totalCount === 0) return;
+
         const timeoutId = setTimeout(() => {
+            const currentFilters = { search: searchFilters, date: dateFilterValues, popup: popupFilterValues };
             if (currentPage !== 1) {
-                setCurrentPage(1);
+                // When filters change, we must go back to page 1.
+                // This state update triggers the page-change useEffect, which then executes the search.
+                setCurrentPage(1); 
             } else {
-                fetchData(1);
+                // If we are already on page 1, we trigger the search directly.
+                fetchData(1, currentFilters); 
             }
-        }, 1000);
+        }, 1000); // 1-second debounce delay
 
         return () => clearTimeout(timeoutId);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchFilters, dateFilterValues, popupFilterValues]);
+    }, [filtersString]);
 
     // --- 필터 전처리 ---
     const { processedFilters, initialGroupSelections } = useMemo((): {
@@ -245,8 +270,15 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
     // --- 이벤트 핸들러 ---
     const handleSearch = () => {
-        if (currentPage !== 1) setCurrentPage(1);
-        else fetchData(1);
+        const currentFilters = { search: searchFilters, date: dateFilterValues, popup: popupFilterValues };
+        if (currentPage !== 1) {
+            // 필터 변경으로 페이지를 1로 설정하면,
+            // currentPage를 감지하는 useEffect가 자동으로 데이터를 다시 불러옵니다.
+            setCurrentPage(1);
+        } else {
+            // 이미 1페이지에 있다면, 데이터 조회를 직접 호출합니다.
+            fetchData(1, currentFilters);
+        }
     };
 
     const handleReset = () => {
@@ -366,6 +398,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
     return (
         <>
             <Widget title={structureConfig.title}>
+
                 {isMobile ? (
                     <Fab
                         color="primary"
