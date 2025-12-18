@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from '../api/axiosInstance'; // 수정: axiosInstance import
 import styles from './LoginPage.module.css'; // 간단한 스타일 재사용
 import Widget from '../components/Widget';
 
@@ -20,16 +20,12 @@ const StructureAdminPage: React.FC = () => {
         setStructureCont('');
 
         try {
-            const storedUser = sessionStorage.getItem('user');
-            const user = storedUser ? JSON.parse(storedUser) : {};
-            const usiteNo = user?.M_USITE_NO || 1;
-
-            const response = await axios.get('/api/data/execute', {
+            // 인터셉터가 USITE, UID를 자동으로 추가해줍니다.
+            const response = await axiosInstance.get('/api/data/execute', {
                 params: {
                     serviceName: 'M_STRUCTURE',
                     methodName: 'MVIEW',
                     structureName: structureName,
-                    usiteNo: usiteNo,
                 }
             });
 

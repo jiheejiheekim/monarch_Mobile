@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
+import axiosInstance from '../api/axiosInstance'; // 수정: axiosInstance import
 import { useNavigate } from 'react-router-dom';
 
 import styles from './MainPage.module.css'; // CSS 모듈 가져오기
@@ -19,7 +19,7 @@ const MainPage: React.FC = () => {
     }, []);
 
  const handleLogout = async () => {
- await axios.post('/api/logout').catch(err => console.error("Logout failed", err));
+ await axiosInstance.post('/api/logout').catch(err => console.error("Logout failed", err));
  // sessionStorage에서 사용자 정보를 삭제합니다.
  sessionStorage.removeItem('user');
  navigate('/login'); // 로그아웃 성공 시 로그인 페이지로 이동합니다.
@@ -28,7 +28,7 @@ const MainPage: React.FC = () => {
     useEffect(() => {
         const fetchHelloMessage = async () => {
             try {
-                const response = await axios.get('/api/hello');
+                const response = await axiosInstance.get('/api/hello');
                 setMessage(response.data.message);
             } catch (error) {
                 console.error("Failed to fetch hello message:", error);
