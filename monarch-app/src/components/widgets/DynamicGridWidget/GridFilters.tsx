@@ -10,6 +10,8 @@ import PopupFilterInput from '../PopupFilterInput';
 import type { PopupFilter } from '../PopupFilterInput';
 import FilterButtons from '../FilterButtons';
 import type { ButtonConfig } from './types';
+import { getCommCodes } from '../../../api/commCode';
+import type { CommCode } from '../../../api/commCode';
 
 interface GridFiltersProps {
     processedFilters: ProcessedRow[];
@@ -55,6 +57,21 @@ export const GridFilters: React.FC<GridFiltersProps> = ({
     onButtonClick
 }) => {
 
+    const [options, setOptions] = React.useState<Record<string, CommCode[]>>({});
+
+    React.useEffect(() => {
+        processedFilters.forEach(row => {
+            row.units.forEach(unit => {
+                if (unit.type === 'single' && unit.item.type === 'select' && unit.item.codeGroup) {
+                    const codeGroup = unit.item.codeGroup;
+                    getCommCodes(codeGroup).then(data => {
+                        setOptions(prev => ({ ...prev, [codeGroup]: data }));
+                    });
+                }
+            });
+        });
+    }, [processedFilters]);
+
     // 개별 필터 컨트롤 렌더링
     const renderFilterControl = (filter: FilterItem) => {
         const filterType = filter.type || 'text';
@@ -94,6 +111,29 @@ export const GridFilters: React.FC<GridFiltersProps> = ({
                         onOpenPopup={() => onPopupOpen(popupFilter)}
                         onClear={() => onPopupClear(popupFilter.field)}
                     />
+                );
+            }
+
+            case 'select': {
+                const codeGroup = filter.codeGroup || '';
+                const items = options[codeGroup] || [];
+                return (
+                    <FormControl variant="outlined" fullWidth>
+                        <InputLabel shrink>{filter.label}</InputLabel>
+                        <Select
+                            value={searchFilters[filter.field] || ''}
+                            label={filter.label}
+                            onChange={e => onUngroupedFilterChange(filter.field, e.target.value as string)}
+                            displayEmpty
+                        >
+                            <MenuItem value="">전체</MenuItem>
+                            {items.map(item => (
+                                <MenuItem key={item.codeVal} value={item.codeVal}>
+                                    {item.codeName}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
                 );
             }
 

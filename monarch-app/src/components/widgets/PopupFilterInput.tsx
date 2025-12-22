@@ -12,6 +12,7 @@ export interface PopupFilter {
     structureName: string;
     popupKey: string;
     colspan?: number | string;
+    codeGroup?: string;
 }
 
 interface PopupFilterInputProps {

@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -70,7 +72,8 @@ public class MUser {
     private String deptCode;
 
     /** 사용 여부 (1: 사용, 0: 미사용) */
-    @Column(name = "USE_FLAG", length = 1, columnDefinition = "NCHAR(1)")
+    @JdbcTypeCode(SqlTypes.NCHAR)
+    @Column(name = "USE_FLAG", length = 1)
     private String useFlag;
 
     /** 회원사 번호 (다중 테넌트 지원용) */
