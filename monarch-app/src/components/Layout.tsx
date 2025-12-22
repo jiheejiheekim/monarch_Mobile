@@ -62,27 +62,20 @@ const menuItems: MenuItem[] = [
         ]
     },
     // 새로 추가된 대메뉴
-    {
-        name: 'MY Sales Plan', icon: '📝', subItems: [
-            { name: '접촉계획고객', structureName: '접촉계획고객_MTBL' },
-            { name: 'Overdue (계획)', structureName: '접촉영업건_MTBL' },
-            { name: '신규영업건 (계획)', structureName: '접촉영업건_MTBL' },
-            { name: '리드영업건 (계획)', structureName: '접촉영업건_MTBL' },
-            { name: '고아영업건 (계획)', structureName: '접촉영업건_MTBL' },
-            { name: '일반 접촉영업건', structureName: '접촉영업건_MTBL' },
-            { name: '장기변동무 (계획)', structureName: '접촉영업건_MTBL' },
-            { name: '완료영업건 (계획)', structureName: '접촉영업건_MTBL' },
-            { name: '신규문의고객 (계획)', structureName: '접촉영업건_MTBL' }
-        ]
-    },
-    {
-        name: 'Admin', icon: '⚙️', subItems: [
-            { name: '사용자관리', structureName: '사용자관리_MTBL' },
-            { name: '개발정보', path: '/admin/dev' },
-            { name: 'Structure정보', path: '/admin/structure' },
-            { name: 'Service정보', path: '/admin/service' }
-        ]
-    }
+    { name: 'MY Sales Plan', icon: '📝', subItems: [
+        { name: '접촉계획고객', structureName: '접촉계획고객_MTBL' },
+        { name: 'Overdue', structureName: '접촉영업건_MTBL' },
+        { name: '신규고객', structureName: '신규고객_MTBL' },
+        { name: '리드고객', structureName: '접촉영업건_MTBL' },
+        { name: '고아고객영업', structureName: '고아고객영업_MTBL' },
+        { name: '기존고객정기관리', structureName: '기존고객정기관리_MTBL' },   // 생성 중
+    ] },
+    { name: 'Admin', icon: '⚙️', subItems: [
+        { name: '사용자관리', structureName: '사용자관리_MTBL' },
+        { name: '개발정보', path: '/admin/dev' },
+        { name: 'Structure정보', path: '/admin/structure' },
+        { name: 'Service정보', path: '/admin/service' }
+    ] }
 ];
 
 /**
