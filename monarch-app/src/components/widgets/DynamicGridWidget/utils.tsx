@@ -12,7 +12,6 @@ export const parseConfig = (raw: unknown): StructureConfig => {
         return new Function('return ' + String(raw))() as StructureConfig;
     } catch (e) {
         console.error("Config parse failed:", e);
-        console.log("Raw Config:", raw);
         return {} as StructureConfig;
     }
 };
@@ -25,10 +24,18 @@ export const parseConfig = (raw: unknown): StructureConfig => {
  */
 export const renderValue = (col: ColModel, row: GridRow) => {
     const val = row[col.field];
-    let displayVal = val?.toString();
+    if (val === undefined || val === null) return '';
+    let displayVal = val.toString();
 
     if ((col.type || 'text') === 'date' && val) {
-        displayVal = new Date(val as string).toISOString().slice(0, 10);
+        try {
+            const dateObj = new Date(val as string);
+            if (!isNaN(dateObj.getTime())) {
+                displayVal = dateObj.toISOString().slice(0, 10);
+            }
+        } catch (e) {
+            console.warn(`Date conversion failed for field ${col.field}:`, val);
+        }
     }
 
     if (col.chip && val) {

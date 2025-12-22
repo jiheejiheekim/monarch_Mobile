@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import axios from 'axios';
 
 // --- Child Components ---
@@ -14,14 +14,14 @@ import type {
     ProcessedRow,
     TextFilterItem,
     FilterRow as IFilterRow,
-    FilterItem,
     DynamicGridWidgetProps
 } from './DynamicGridWidget/types';
 import type { PopupFilter } from './PopupFilterInput';
 
 // --- Common Components ---
 import Widget from '../Widget';
-import PopupGrid from './PopupGrid';
+// Lazy load PopupGrid to break circular dependency
+const PopupGrid = lazy(() => import('./PopupGrid'));
 
 // --- MUI Material & Icons ---
 import {
@@ -43,13 +43,22 @@ import SearchIcon from '@mui/icons-material/Search';
  */
 const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, onRowClick }) => {
 
-    // --- 상태 관리 ---
-    const [structureConfig, setStructureConfig] = useState<StructureConfig | null>(null);
-    const [gridData, setGridData] = useState<GridRow[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    // --- 상태 관리 통합 ---
+    const [state, setState] = useState<{
+        config: StructureConfig | null;
+        data: GridRow[];
+        isLoading: boolean;
+        error: string | null;
+        totalCount: number;
+    }>({
+        config: null,
+        data: [],
+        isLoading: true,
+        error: null,
+        totalCount: 0
+    });
+
     const [currentPage, setCurrentPage] = useState(1);
-    const [totalCount, setTotalCount] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [searchFilters, setSearchFilters] = useState<Record<string, string>>({});
     const [dateFilterValues, setDateFilterValues] = useState<Record<string, { from?: string, to?: string }>>({});
@@ -58,6 +67,16 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
     const [activePopup, setActivePopup] = useState<PopupFilter | null>(null);
     const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
     const [showTopBtn, setShowTopBtn] = useState(false);
+
+    // Initialization and deduplication guards
+    const lastStructureName = useRef<string | null>(null);
+    const lastFetchSignature = useRef<string>("");
+    const isMounted = useRef(true);
+
+    useEffect(() => {
+        isMounted.current = true;
+        return () => { isMounted.current = false; };
+    }, []);
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -70,164 +89,81 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
     }, []);
 
     useEffect(() => {
-        setPageSize(isMobile ? 5 : 10);
-        setCurrentPage(1);
-    }, [isMobile]);
+        if (!state.config) {
+            setPageSize(isMobile ? 5 : 10);
+            setCurrentPage(1);
+        }
+    }, [isMobile, state.config]);
 
     // --- 데이터 가져오기 ---
-    const fetchStructure = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const storedUser = sessionStorage.getItem('user');
-            const user = storedUser ? JSON.parse(storedUser) : {};
-            const usiteNo = user?.M_USITE_NO || 1;
-
-            const response = await axios.get('/api/data/execute', {
-                params: { serviceName: 'M_STRUCTURE', methodName: 'MVIEW', structureName, usiteNo }
-            });
-
-            if (response.data?.structureCont) {
-                const parsedConfig = parseConfig(response.data.structureCont);
-
-                // Default values for robustness
-                if (!parsedConfig.colgroup || parsedConfig.colgroup.length === 0) {
-                    parsedConfig.colgroup = [{ "index": "Col1", "Width": "100%" }];
-                }
-                if (parsedConfig.filterView && parsedConfig.filterView.length > 0) {
-                    const firstItem = parsedConfig.filterView[0];
-                    if (!('TD' in firstItem)) {
-                        parsedConfig.filterView = [{ TD: parsedConfig.filterView as FilterItem[] }];
-                    }
-                }
-                if (!parsedConfig.buttons || parsedConfig.buttons.length === 0) {
-                    parsedConfig.buttons = [
-                        { "label": "조회", "index": "List", "inComm": "List" },
-                        { "label": "초기화", "index": "Init", "inComm": "initialize" }
-                    ];
-                }
-                setStructureConfig(parsedConfig);
-            } else {
-                throw new Error("화면 구성 정보를 찾을 수 없습니다.");
-            }
-        } catch (err) {
-            setError(`화면 구성(${structureName})을 불러오는 데 실패했습니다.`);
-            console.error('Structure fetch error:', err);
-        } finally {
-            // Data fetching will be triggered by structureConfig change, so no need to stop loading here
-        }
-    }, [structureName]);
-
     const fetchData = useCallback(async (page: number, currentFilters: {
         search: Record<string, string>,
         date: Record<string, { from?: string, to?: string }>,
         popup: Record<string, { value?: FilterValue; display?: string }>
     }) => {
-        if (!structureConfig) return;
-        setIsLoading(true);
-        setError(null);
+        if (!state.config) return;
+        setState(prev => ({ ...prev, isLoading: true, error: null }));
 
         try {
             const storedUser = sessionStorage.getItem('user');
-            const user = storedUser ? JSON.parse(storedUser) : {};
+            let user: any = {};
+            try { user = storedUser ? JSON.parse(storedUser) : {}; } catch (e) { /* ignore */ }
             const usite = user?.M_USITE_NO || 1;
             const uid = user?.M_USER_NO || null;
 
-            const appliedFilters: Record<string, FilterValue> = { ...currentFilters.search };
+            const appliedFilters: Record<string, FilterValue> = {};
+            Object.entries(currentFilters.search).forEach(([key, val]) => {
+                if (val !== undefined && val !== null && val !== '') appliedFilters[key] = val;
+            });
             Object.entries(currentFilters.date).forEach(([field, dates]) => {
                 if (dates.from) appliedFilters[`${field}_FROM`] = dates.from;
                 if (dates.to) appliedFilters[`${field}_TO`] = dates.to;
             });
             Object.entries(currentFilters.popup).forEach(([field, popupValue]) => {
-                if (popupValue.value) appliedFilters[field] = popupValue.value;
+                if (popupValue.value !== undefined && popupValue.value !== null && popupValue.value !== '') appliedFilters[field] = popupValue.value;
             });
 
             const response = await axios.get('/api/data/execute', {
                 params: {
-                    serviceName: structureConfig.service,
-                    methodName: structureConfig.method,
+                    serviceName: state.config.service,
+                    methodName: state.config.method,
                     USITE: usite,
                     UID: uid,
                     _page: page,
-                    _sort: structureConfig.order,
+                    _sort: state.config.order,
                     _size: pageSize,
                     ...appliedFilters,
                 }
             });
 
             const responseData = Array.isArray(response.data) ? response.data[0] : response.data;
-            setGridData(responseData?.data || []);
-            setTotalCount(responseData?.totalCount || 0);
-
+            setState(prev => ({
+                ...prev,
+                data: responseData?.data || [],
+                totalCount: responseData?.totalCount || 0,
+                isLoading: false
+            }));
         } catch (err) {
-            setError('데이터를 불러오는 데 실패했습니다.');
             console.error('Data fetch error:', err);
-        } finally {
-            setIsLoading(false);
+            setState(prev => ({ ...prev, isLoading: false, error: '데이터를 불러오는 데 실패했습니다.' }));
         }
-    }, [structureConfig, pageSize]);
-
-    useEffect(() => { fetchStructure(); }, [fetchStructure]);
-
-    useEffect(() => {
-        if (structureConfig) {
-            const currentFilters = { search: searchFilters, date: dateFilterValues, popup: popupFilterValues };
-            fetchData(currentPage, currentFilters);
-        }
-        // fetchData가 필터 상태에 더 이상 의존하지 않으므로, 이 effect는 이제 페이지 변경 시에만 실행됩니다.
-        // 필터 변경은 아래의 디바운스된 useEffect에서만 처리됩니다.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [structureConfig, currentPage]);
-
-    // --- Debounced Search ---
-    // Who: Developer
-    // What: Stabilize the filter dependency for the debouncing effect.
-    // Why: Filter state objects are re-created on every render. Using them directly as dependencies
-    //      caused the debounce effect to re-trigger after its own state update (setCurrentPage),
-    //      leading to a second, unwanted data fetch. By converting the filters to a stable JSON string,
-    //      the effect only runs when the filter *content* actually changes, not just on re-renders.
-    const filtersString = useMemo(() => JSON.stringify({ searchFilters, dateFilterValues, popupFilterValues }), [searchFilters, dateFilterValues, popupFilterValues]);
-
-    useEffect(() => {
-        if (!structureConfig) return;
-
-        // This prevents the debounced search from running on the very first page load,
-        // as the initial data fetch is handled by another useEffect triggered by structureConfig loading.
-        const isInitialLoad = currentPage === 1 && Object.values(searchFilters).every(v => !v) && Object.values(dateFilterValues).every(v => !v.from && !v.to) && Object.values(popupFilterValues).every(v => !v.value);
-        if (isInitialLoad && totalCount === 0) return;
-
-        const timeoutId = setTimeout(() => {
-            const currentFilters = { search: searchFilters, date: dateFilterValues, popup: popupFilterValues };
-            if (currentPage !== 1) {
-                // When filters change, we must go back to page 1.
-                // This state update triggers the page-change useEffect, which then executes the search.
-                setCurrentPage(1); 
-            } else {
-                // If we are already on page 1, we trigger the search directly.
-                fetchData(1, currentFilters); 
-            }
-        }, 1000); // 1-second debounce delay
-
-        return () => clearTimeout(timeoutId);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filtersString]);
+    }, [state.config, pageSize]);
 
     // --- 필터 전처리 ---
     const { processedFilters, initialGroupSelections } = useMemo((): {
         processedFilters: ProcessedRow[];
         initialGroupSelections: Record<string, string>;
     } => {
-        if (!structureConfig?.filterView) return { processedFilters: [], initialGroupSelections: {} };
+        if (!state.config?.filterView || !Array.isArray(state.config.filterView)) return { processedFilters: [], initialGroupSelections: {} };
 
         const initialSelections: Record<string, string> = {};
-        const processed = (structureConfig.filterView as IFilterRow[]).map((row, rowIndex) => {
-            if (!row || !row.TD) return null;
-
+        const processed = (state.config.filterView as IFilterRow[]).map((row, rowIndex) => {
+            if (!row || !row.TD || !Array.isArray(row.TD)) return null;
             const units: ProcessedRow['units'] = [];
             const groups = new Map<string, TextFilterItem[]>();
 
             row.TD.forEach(item => {
-                if (item.type === 'text' && item.groupName) {
+                if (item && item.type === 'text' && item.groupName) {
                     if (!groups.has(item.groupName)) groups.set(item.groupName, []);
                     groups.get(item.groupName)!.push(item as TextFilterItem);
                 }
@@ -239,6 +175,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
             const processedGroupNames = new Set<string>();
             row.TD.forEach((item, itemIndex) => {
+                if (!item) return;
                 if (item.type === 'text' && item.groupName) {
                     if (!processedGroupNames.has(item.groupName)) {
                         processedGroupNames.add(item.groupName);
@@ -257,26 +194,129 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
                     });
                 }
             });
-
             return { key: `row-${rowIndex}`, units };
         }).filter((r): r is ProcessedRow => r !== null);
 
         return { processedFilters: processed, initialGroupSelections: initialSelections };
-    }, [structureConfig]);
+    }, [state.config]);
+
+    // --- Consolidated Initialization & Data Fetching ---
+    const filtersString = useMemo(() => JSON.stringify({ searchFilters, dateFilterValues, popupFilterValues }), [searchFilters, dateFilterValues, popupFilterValues]);
 
     useEffect(() => {
-        setGroupSelections(initialGroupSelections);
-    }, [initialGroupSelections]);
+        let isEffectMounted = true;
+        const abortController = new AbortController();
+
+        const initializeComponent = async () => {
+            if (!structureName) return;
+            setState(prev => ({ ...prev, isLoading: true, error: null }));
+
+            try {
+                // 1. Fetch Structure Config
+                const storedUser = sessionStorage.getItem('user');
+                let user: any = {};
+                try { user = storedUser ? JSON.parse(storedUser) : {}; } catch (e) { /* ignore */ }
+                const usiteNo = user?.M_USITE_NO || 1;
+
+                const structResponse = await axios.get('/api/data/execute', {
+                    params: { serviceName: 'M_STRUCTURE', methodName: 'MVIEW', structureName, usiteNo },
+                    signal: abortController.signal
+                });
+
+                if (!isEffectMounted) return;
+
+                const rawConfig = structResponse.data?.structureCont;
+                if (!rawConfig) throw new Error("화면 구성 정보를 찾을 수 없습니다.");
+
+                const parsedConfig = parseConfig(rawConfig);
+
+                // Derived initial selections
+                const initSelections: Record<string, string> = {};
+                if (parsedConfig.filterView && Array.isArray(parsedConfig.filterView)) {
+                    (parsedConfig.filterView as IFilterRow[]).forEach(row => {
+                        if (row?.TD) {
+                            row.TD.forEach(item => {
+                                if (item?.type === 'text' && item.groupName && !initSelections[item.groupName]) {
+                                    initSelections[item.groupName] = item.field;
+                                }
+                            });
+                        }
+                    });
+                }
+                if (Object.keys(initSelections).length > 0) setGroupSelections(initSelections);
+
+                // 2. Fetch Initial Data
+                const usite = user?.M_USITE_NO || 1;
+                const uid = user?.M_USER_NO || null;
+
+                const dataResponse = await axios.get('/api/data/execute', {
+                    params: {
+                        serviceName: parsedConfig.service,
+                        methodName: parsedConfig.method,
+                        USITE: usite,
+                        UID: uid,
+                        _page: 1,
+                        _sort: parsedConfig.order,
+                        _size: pageSize,
+                    },
+                    signal: abortController.signal
+                });
+
+                if (!isEffectMounted) return;
+
+                const responseData = Array.isArray(dataResponse.data) ? dataResponse.data[0] : dataResponse.data;
+
+                setState({
+                    config: parsedConfig,
+                    data: responseData?.data || [],
+                    totalCount: responseData?.totalCount || 0,
+                    error: null,
+                    isLoading: false
+                });
+
+                setCurrentPage(1);
+                lastStructureName.current = structureName;
+                lastFetchSignature.current = `${structureName}|${filtersString}|1|${pageSize}`;
+
+            } catch (err: any) {
+                if (err.name === 'CanceledError') return;
+                console.error("Initialization failed:", err);
+                setState(prev => ({
+                    ...prev,
+                    isLoading: false,
+                    error: `화면 초기화 실패: ${err.message || "Unknown error"}`
+                }));
+            }
+        };
+
+        initializeComponent();
+        return () => {
+            isEffectMounted = false;
+            abortController.abort();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [structureName]);
+
+    useEffect(() => {
+        if (!state.config || lastStructureName.current !== structureName) return;
+        const sig = `${structureName}|${filtersString}|${currentPage}|${pageSize}`;
+        if (lastFetchSignature.current === sig) return;
+
+        const timeoutId = setTimeout(() => {
+            if (!isMounted.current) return;
+            const currentFilters = { search: searchFilters, date: dateFilterValues, popup: popupFilterValues };
+            lastFetchSignature.current = sig;
+            fetchData(currentPage, currentFilters);
+        }, 800);
+        return () => clearTimeout(timeoutId);
+    }, [state.config, filtersString, currentPage, pageSize, structureName, fetchData]);
 
     // --- 이벤트 핸들러 ---
     const handleSearch = () => {
         const currentFilters = { search: searchFilters, date: dateFilterValues, popup: popupFilterValues };
         if (currentPage !== 1) {
-            // 필터 변경으로 페이지를 1로 설정하면,
-            // currentPage를 감지하는 useEffect가 자동으로 데이터를 다시 불러옵니다.
             setCurrentPage(1);
         } else {
-            // 이미 1페이지에 있다면, 데이터 조회를 직접 호출합니다.
             fetchData(1, currentFilters);
         }
     };
@@ -328,17 +368,17 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
     const handlePageSizeChange = (newSize: number) => {
         setPageSize(newSize);
-        setCurrentPage(1); // Reset to first page
+        setCurrentPage(1);
     };
 
     const handleExcelDownload = () => {
-        if (!gridData || gridData.length === 0) {
+        if (!state.data || state.data.length === 0) {
             alert("다운로드할 데이터가 없습니다.");
             return;
         }
-        const headers = structureConfig?.colModel.map(col => col.label).join(',') || '';
-        const fields = structureConfig?.colModel.map(col => col.field) || [];
-        const csvRows = gridData.map(row => {
+        const headers = state.config?.colModel.map(col => col.label).join(',') || '';
+        const fields = state.config?.colModel.map(col => col.field) || [];
+        const csvRows = state.data.map(row => {
             return fields.map(field => {
                 const val = (row[field] ?? '').toString().replace(/"/g, '""');
                 return `"${val}"`;
@@ -348,7 +388,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.setAttribute('download', `${structureConfig?.title || 'download'}.csv`);
+        link.setAttribute('download', `${state.config?.title || 'download'}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -365,10 +405,10 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
     const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // --- 렌더링 ---
-    if (!structureConfig) {
+    if (!state.config) {
         return (
             <Widget title={structureName}>
-                {error ? <Alert severity="error">{error}</Alert> : <CircularProgress />}
+                {state.error ? <Alert severity="error">{state.error}</Alert> : <CircularProgress />}
             </Widget>
         );
     }
@@ -380,9 +420,9 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
             dateFilterValues={dateFilterValues}
             popupFilterValues={popupFilterValues}
             groupSelections={groupSelections}
-            totalColumns={structureConfig.colgroup?.length || 1}
+            totalColumns={Math.max(1, state.config.colgroup?.length || 1)}
             isMobile={isMobile}
-            buttons={structureConfig.buttons}
+            buttons={state.config.buttons}
             onUngroupedFilterChange={handleUngroupedFilterChange}
             onGroupedSelectChange={handleGroupedSelectChange}
             onGroupedValueChange={handleGroupedValueChange}
@@ -397,8 +437,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
     return (
         <>
-            <Widget title={structureConfig.title}>
-
+            <Widget title={state.config.title}>
                 {isMobile ? (
                     <Fab
                         color="primary"
@@ -412,20 +451,20 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
                     filtersComponent
                 )}
 
-                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                {state.error && <Alert severity="error" sx={{ mb: 2 }}>{state.error}</Alert>}
 
                 <GridTable
-                    structureConfig={structureConfig}
-                    gridData={gridData}
-                    isLoading={isLoading}
+                    structureConfig={state.config}
+                    gridData={state.data}
+                    isLoading={state.isLoading}
                     isMobile={isMobile}
                     onRowClick={onRowClick}
                 />
 
-                {!isLoading && gridData.length > 0 && (
+                {!state.isLoading && state.data.length > 0 && (
                     <GridPagination
                         currentPage={currentPage}
-                        totalCount={totalCount}
+                        totalCount={state.totalCount}
                         pageSize={pageSize}
                         onPageChange={setCurrentPage}
                         onPageSizeChange={handlePageSizeChange}
@@ -463,7 +502,11 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
                 </Fab>
             </Zoom>
 
-            {activePopup && <PopupGrid structureName={activePopup.structureName} title={`${activePopup.label} 선택`} onSelect={handlePopupSelect} onClose={() => setActivePopup(null)} />}
+            {activePopup && (
+                <Suspense fallback={<CircularProgress sx={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 10000 }} />}>
+                    <PopupGrid structureName={activePopup.structureName} title={`${activePopup.label} 선택`} onSelect={handlePopupSelect} onClose={() => setActivePopup(null)} />
+                </Suspense>
+            )}
         </>
     );
 };

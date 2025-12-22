@@ -30,6 +30,7 @@ export type BaseFilterItem = {
     type?: 'text' | 'select' | 'date' | 'dateBetween';
     groupName?: string;
     colspan?: number | string;
+    codeGroup?: string;
 };
 
 export type FilterItem = BaseFilterItem | PopupFilter;

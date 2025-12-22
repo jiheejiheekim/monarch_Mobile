@@ -20,12 +20,12 @@ export const MobileGridCard: React.FC<MobileGridCardProps> = ({ row, structureCo
     const [expanded, setExpanded] = useState(false);
 
     // 컬럼 가져오기
-    const columns = structureConfig.colModel;
+    const columns = Array.isArray(structureConfig.colModel) ? structureConfig.colModel : [];
     if (columns.length === 0) return null;
 
     // 첫 번째 컬럼을 헤더 타이틀로 사용
     const titleCol = columns[0];
-    const titleVal = row[titleCol.field]?.toString() || '-';
+    const titleVal = titleCol ? (row[titleCol.field]?.toString() || '-') : '-';
 
     // 본문에 표시할 나머지 컬럼들
     const otherCols = columns.slice(1);

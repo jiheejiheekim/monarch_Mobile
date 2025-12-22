@@ -50,25 +50,25 @@ interface MenuItem {
 // 메뉴를 추가, 수정, 삭제할 때 이 부분만 변경하면 되므로 유지보수가 용이합니다.
 const menuItems: MenuItem[] = [
     { name: '대시보드', path: '/', icon: '📊' },
-    { name: '영업', icon: '💼', subItems: [
-        { name: '영업관리', structureName: '영업관리_MTBL' },
-        { name: '접촉관리', structureName: '접촉관리_MTBL' }
-    ]},
-    { name: '고객', icon: '👥', subItems: [
-        { name: '고객관리', structureName: '고객관리_MTBL' }
-    ] },
+    {
+        name: '영업', icon: '💼', subItems: [
+            { name: '영업관리', structureName: '영업관리_MTBL' },
+            { name: '접촉관리', structureName: '접촉관리_MTBL' }
+        ]
+    },
+    {
+        name: '고객', icon: '👥', subItems: [
+            { name: '고객관리', structureName: '고객관리_MTBL' }
+        ]
+    },
     // 새로 추가된 대메뉴
     { name: 'MY Sales Plan', icon: '📝', subItems: [
         { name: '접촉계획고객', structureName: '접촉계획고객_MTBL' },
-        { name: 'Overdue', structureName: '접촉OVERDUE_MTBL' },
+        { name: 'Overdue', structureName: '접촉영업건_MTBL' },
         { name: '신규고객', structureName: '신규고객_MTBL' },
-        { name: '리드고객', structureName: '리드고객_MTBL' },
-        { name: '고아고객영업', structureName: '고아고객영업_MTBL' },   //수정 중 
-        { name: '접촉영업건', structureName: '접촉영업건_MTBL' },
-        { name: '장기변동무', structureName: '접촉영업건_MTBL' },
-        { name: '접촉영업건', structureName: '접촉영업건_MTBL' },
-        { name: '완료영업건', structureName: '접촉영업건_MTBL' },
-        { name: '신규문의고객', structureName: '접촉영업건_MTBL' }
+        { name: '리드고객', structureName: '접촉영업건_MTBL' },
+        { name: '고아고객영업', structureName: '고아고객영업_MTBL' },
+        { name: '기존고객정기관리', structureName: '기존고객정기관리_MTBL' },   // 생성 중
     ] },
     { name: 'Admin', icon: '⚙️', subItems: [
         { name: '사용자관리', structureName: '사용자관리_MTBL' },
@@ -104,7 +104,7 @@ const Layout: React.FC = () => {
     const [isSidebarPinned, setSidebarPinned] = useState(false); // 사이드바 고정 여부 상태
     const [isMobileMenuOpen, setMobileMenuOpen] = useState(false); // 모바일 화면에서 사이드바 메뉴가 열렸는지 여부
     const [openMenu, setOpenMenu] = useState<string | null>(null); // 사이드바의 아코디언 메뉴 중 현재 열린 메뉴의 이름
-    
+
     // --- React Router 훅 ---
     const location = useLocation(); // 현재 URL 경로 정보를 담고 있는 객체. 페이지 이동 감지에 사용됩니다.
     const navigate = useNavigate(); // 페이지를 프로그래밍 방식으로 이동시키는 함수
@@ -181,8 +181,8 @@ const Layout: React.FC = () => {
                                 </Link>
                                 {hasSubItems && item.subItems && (
                                     <ul className={styles.submenu}>
-                                        {item.subItems.map((subItem) => (
-                                            <li key={subItem.name}>
+                                        {item.subItems.map((subItem, subIdx) => (
+                                            <li key={`${subItem.name}-${subIdx}`}>
                                                 <Link to={getMenuItemLinkPath(subItem)}>{subItem.name}</Link>
                                             </li>
                                         ))}
@@ -215,7 +215,7 @@ const Layout: React.FC = () => {
                                                 <Link to={linkPath} className={styles.topMenuLink}>{item.name}</Link>
                                                 {hasSubItems && item.subItems && (
                                                     <ul className={styles.topSubmenu}>
-                                                        {item.subItems.map((subItem) => (<li key={subItem.name}><Link to={getMenuItemLinkPath(subItem)}>{subItem.name}</Link></li>))}
+                                                        {item.subItems.map((subItem, subIdx) => (<li key={`${subItem.name}-${subIdx}`}><Link to={getMenuItemLinkPath(subItem)}>{subItem.name}</Link></li>))}
                                                     </ul>
                                                 )}
                                             </>

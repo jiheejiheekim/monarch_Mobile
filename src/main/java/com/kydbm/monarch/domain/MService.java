@@ -5,13 +5,15 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
 /** 서비스(동적 쿼리) 정보를 관리하는 엔티티. M_SERVICE 테이블과 매핑됩니다. */
 @Entity
 @Table(name = "M_SERVICE", uniqueConstraints = {
-    @UniqueConstraint(name = "M_SERVICE_UK", columnNames = {"SERVICE_NAME", "METHOD_NAME", "M_USITE_NO"})
+        @UniqueConstraint(name = "M_SERVICE_UK", columnNames = { "SERVICE_NAME", "METHOD_NAME", "M_USITE_NO" })
 })
 @Getter
 @Setter
@@ -60,7 +62,8 @@ public class MService {
     private String dsName;
 
     /** 사용여부. 쿼리가 현재 사용 가능한 상태인지 나타냅니다 (1: 사용, 0: 미사용). */
-    @Column(name = "USE_FLAG", length = 1, columnDefinition = "NCHAR(1)")
+    @JdbcTypeCode(SqlTypes.NCHAR)
+    @Column(name = "USE_FLAG", length = 1)
     private String useFlag;
 
     /** 회원사번호. 다중 테넌트 환경에서 데이터를 구분하기 위해 사용됩니다. */

@@ -10,6 +10,8 @@ import PopupFilterInput from '../PopupFilterInput';
 import type { PopupFilter } from '../PopupFilterInput';
 import FilterButtons from '../FilterButtons';
 import type { ButtonConfig } from './types';
+import { getCommCodes } from '../../../api/commCode';
+import type { CommCode } from '../../../api/commCode';
 
 interface GridFiltersProps {
     processedFilters: ProcessedRow[];
@@ -55,8 +57,69 @@ export const GridFilters: React.FC<GridFiltersProps> = ({
     onButtonClick
 }) => {
 
+    const [options, setOptions] = React.useState<Record<string, CommCode[]>>({});
+    const fetchedGroups = React.useRef<Set<string>>(new Set());
+
+    React.useEffect(() => {
+        let isMounted = true;
+
+        const codeGroups = new Set<string>();
+        processedFilters.forEach(row => {
+            row.units.forEach(unit => {
+                if (unit && unit.type === 'single' && unit.item && unit.item.type === 'select' && unit.item.codeGroup) {
+                    codeGroups.add(unit.item.codeGroup);
+                }
+            });
+        });
+
+        const loadPendingCodes = async () => {
+            const groupsToFetch = Array.from(codeGroups).filter(group =>
+                !fetchedGroups.current.has(group)
+            );
+
+            if (groupsToFetch.length === 0) return;
+
+            // Mark as fetching immediately to prevent redundant calls if processedFilters changes again
+            groupsToFetch.forEach(group => fetchedGroups.current.add(group));
+
+            try {
+                // Fetch all in parallel - getCommCodes handles internal pending request deduplication
+                const results = await Promise.all(
+                    groupsToFetch.map(async (group) => {
+                        try {
+                            const data = await getCommCodes(group);
+                            return { group, data };
+                        } catch {
+                            fetchedGroups.current.delete(group); // Allow retry
+                            return { group, data: [] };
+                        }
+                    })
+                );
+
+                if (!isMounted) return;
+
+                // Batch all updates into a single setOptions call
+                const newOptions: Record<string, CommCode[]> = {};
+                results.forEach(({ group, data }) => {
+                    if (data && data.length > 0) newOptions[group] = data;
+                });
+
+                if (Object.keys(newOptions).length > 0) {
+                    setOptions(prev => ({ ...prev, ...newOptions }));
+                }
+            } catch (err) {
+                console.error("Failed to batch load common codes:", err);
+            }
+        };
+
+        loadPendingCodes();
+
+        return () => { isMounted = false; };
+    }, [processedFilters]); // No longer depends on options
+
     // 개별 필터 컨트롤 렌더링
     const renderFilterControl = (filter: FilterItem) => {
+        if (!filter) return null;
         const filterType = filter.type || 'text';
 
         switch (filterType) {
@@ -94,6 +157,36 @@ export const GridFilters: React.FC<GridFiltersProps> = ({
                         onOpenPopup={() => onPopupOpen(popupFilter)}
                         onClear={() => onPopupClear(popupFilter.field)}
                     />
+                );
+            }
+
+            case 'select': {
+                const codeGroup = filter.codeGroup || '';
+                const items = options[codeGroup] || [];
+                return (
+                    <FormControl variant="outlined" fullWidth>
+                        <InputLabel shrink>{filter.label}</InputLabel>
+                        <Select
+                            value={searchFilters[filter.field] || ''}
+                            label={filter.label}
+                            onChange={e => onUngroupedFilterChange(filter.field, e.target.value as string)}
+                            displayEmpty
+                        >
+                            <MenuItem value="">전체</MenuItem>
+                            {items && Array.isArray(items) && items.slice(0, 200).map((item, idx) => (
+                                item && item.codeVal ? (
+                                    <MenuItem key={`${item.codeVal}-${idx}`} value={item.codeVal}>
+                                        {item.codeName || item.codeVal}
+                                    </MenuItem>
+                                ) : null
+                            ))}
+                            {items.length > 200 && (
+                                <MenuItem disabled sx={{ fontStyle: 'italic', fontSize: '0.8rem' }}>
+                                    외 {items.length - 200}개 항목 더 있음 (항목이 너무 많습니다)
+                                </MenuItem>
+                            )}
+                        </Select>
+                    </FormControl>
                 );
             }
 
@@ -193,8 +286,9 @@ export const GridFilters: React.FC<GridFiltersProps> = ({
                                         const { groupName, items } = unit;
                                         const selectedField = groupSelections[groupName] || items[0]?.field;
                                         const selectedItem = items.find(item => item.field === selectedField);
-                                        const colspan = selectedItem?.colspan ? Number(selectedItem.colspan) : 1;
-                                        const mdSize = Math.max(1, Math.round((colspan / totalColumns) * 12));
+                                        const rawColspan = selectedItem?.colspan ? Number(selectedItem.colspan) : 1;
+                                        const colspan = isNaN(rawColspan) ? 1 : rawColspan;
+                                        const mdSize = Math.max(1, Math.min(12, Math.round((colspan / totalColumns) * 12)));
                                         const value = searchFilters[selectedField] || '';
 
                                         return (
@@ -226,8 +320,9 @@ export const GridFilters: React.FC<GridFiltersProps> = ({
                                             </Grid>
                                         );
                                     } else {
-                                        const colspan = unit.item.colspan ? Number(unit.item.colspan) : 1;
-                                        const mdSize = Math.max(1, Math.round((colspan / totalColumns) * 12));
+                                        const rawColspan = unit.item.colspan ? Number(unit.item.colspan) : 1;
+                                        const colspan = isNaN(rawColspan) ? 1 : rawColspan;
+                                        const mdSize = Math.max(1, Math.min(12, Math.round((colspan / totalColumns) * 12)));
                                         return (
                                             <Grid item xs={12} md={mdSize} key={unit.key}>
                                                 {renderFilterControl(unit.item)}
