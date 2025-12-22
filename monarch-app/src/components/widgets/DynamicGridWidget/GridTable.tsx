@@ -53,13 +53,13 @@ export const GridTable: React.FC<GridTableProps> = ({
             <Table>
                 <TableHead sx={{ backgroundColor: theme.palette.grey[100] }}>
                     <TableRow>
-                        {structureConfig.colModel.map((col, i) => (
+                        {(structureConfig.colModel || []).map((col, i) => (
                             <TableCell
                                 key={i}
-                                align={col.labelAlign || 'center'}
+                                align={col?.labelAlign || 'center'}
                                 sx={{ fontWeight: 'bold' }}
                             >
-                                {col.label}
+                                {col?.label}
                             </TableCell>
                         ))}
                     </TableRow>
@@ -67,12 +67,13 @@ export const GridTable: React.FC<GridTableProps> = ({
                 <TableBody>
                     {gridData.map((row, i) => (
                         <TableRow
-                            key={row[structureConfig.keyName]?.toString() ?? i}
+                            key={row[structureConfig.keyName || '']?.toString() ?? i}
                             hover
                             onClick={() => onRowClick?.(row)}
                             sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
                         >
-                            {structureConfig.colModel.map(col => {
+                            {(structureConfig.colModel || []).map(col => {
+                                if (!col) return null;
                                 let content = renderValue(col, row);
 
                                 // Desktop에서 chip을 filled variant로 표시
