@@ -14,7 +14,9 @@ import type {
     ProcessedRow,
     TextFilterItem,
     FilterRow as IFilterRow,
-    DynamicGridWidgetProps
+    DynamicGridWidgetProps,
+    FilterItem,
+    RenderableUnit
 } from './DynamicGridWidget/types';
 import type { PopupFilter } from './PopupFilterInput';
 
@@ -33,13 +35,6 @@ import SearchIcon from '@mui/icons-material/Search';
 
 /**
  * DynamicGridWidget 컴포넌트
- * 
- * 범용 데이터 그리드 위젯:
- * 1. 동적으로 설정 가져오기 (structureConfig)
- * 2. 검색 필터 생성
- * 3. 페이지네이션된 테이블 또는 모바일 카드 목록으로 데이터 표시
- * 4. 엑셀 다운로드 처리
- * 5. 반응형 UX 제공
  */
 const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, onRowClick }) => {
 
@@ -157,26 +152,31 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
         if (!state.config?.filterView || !Array.isArray(state.config.filterView)) return { processedFilters: [], initialGroupSelections: {} };
 
         const initialSelections: Record<string, string> = {};
-        const processed = (state.config.filterView as IFilterRow[]).map((row, rowIndex) => {
-            if (!row || !row.TD || !Array.isArray(row.TD)) return null;
-            const units: ProcessedRow['units'] = [];
+        const rawFilters = state.config.filterView;
+        const processed = (rawFilters as any[]).map((rowOrItem, rowIndex) => {
+            if (!rowOrItem) return null;
+
+            const items: FilterItem[] = Array.isArray(rowOrItem.TD) ? rowOrItem.TD : [rowOrItem];
+            const units: RenderableUnit[] = [];
             const groups = new Map<string, TextFilterItem[]>();
 
-            row.TD.forEach(item => {
-                if (item && item.type === 'text' && item.groupName) {
+            items.forEach(item => {
+                const type = item?.type?.toLowerCase();
+                if (item && type === 'text' && item.groupName) {
                     if (!groups.has(item.groupName)) groups.set(item.groupName, []);
                     groups.get(item.groupName)!.push(item as TextFilterItem);
                 }
             });
 
-            groups.forEach((items, groupName) => {
-                if (items.length > 0) initialSelections[groupName] = items[0].field;
+            groups.forEach((groupItems, groupName) => {
+                if (groupItems.length > 0) initialSelections[groupName] = groupItems[0].field;
             });
 
             const processedGroupNames = new Set<string>();
-            row.TD.forEach((item, itemIndex) => {
+            items.forEach((item, itemIndex) => {
                 if (!item) return;
-                if (item.type === 'text' && item.groupName) {
+                const type = item.type?.toLowerCase();
+                if (type === 'text' && item.groupName) {
                     if (!processedGroupNames.has(item.groupName)) {
                         processedGroupNames.add(item.groupName);
                         units.push({
@@ -189,12 +189,12 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
                 } else {
                     units.push({
                         type: 'single',
-                        item: item,
+                        item: { ...item, type: type as any },
                         key: item.field || `single-${itemIndex}`,
                     });
                 }
             });
-            return { key: `row-${rowIndex}`, units };
+            return units.length > 0 ? { key: `row-${rowIndex}`, units } : null;
         }).filter((r): r is ProcessedRow => r !== null);
 
         return { processedFilters: processed, initialGroupSelections: initialSelections };
@@ -230,21 +230,6 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
                 const parsedConfig = parseConfig(rawConfig);
 
-                // Derived initial selections
-                const initSelections: Record<string, string> = {};
-                if (parsedConfig.filterView && Array.isArray(parsedConfig.filterView)) {
-                    (parsedConfig.filterView as IFilterRow[]).forEach(row => {
-                        if (row?.TD) {
-                            row.TD.forEach(item => {
-                                if (item?.type === 'text' && item.groupName && !initSelections[item.groupName]) {
-                                    initSelections[item.groupName] = item.field;
-                                }
-                            });
-                        }
-                    });
-                }
-                if (Object.keys(initSelections).length > 0) setGroupSelections(initSelections);
-
                 // 2. Fetch Initial Data
                 const usite = user?.M_USITE_NO || 1;
                 const uid = user?.M_USER_NO || null;
@@ -278,6 +263,8 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
                 lastStructureName.current = structureName;
                 lastFetchSignature.current = `${structureName}|${filtersString}|1|${pageSize}`;
 
+                // Force reset selections for the new structure
+                // Logic already handled by processedFilters dependency in other hooks
             } catch (err: any) {
                 if (err.name === 'CanceledError') return;
                 console.error("Initialization failed:", err);
@@ -473,7 +460,6 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
                 )}
             </Widget>
 
-            {/* Mobile Filter Drawer */}
             <Drawer
                 anchor="bottom"
                 open={mobileFilterOpen}
@@ -490,7 +476,6 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
                 </Box>
             </Drawer>
 
-            {/* Scroll to Top FAB */}
             <Zoom in={showTopBtn}>
                 <Fab
                     color="secondary"

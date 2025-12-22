@@ -58,7 +58,6 @@ export const GridFilters: React.FC<GridFiltersProps> = ({
 }) => {
 
     const [options, setOptions] = React.useState<Record<string, CommCode[]>>({});
-    const fetchedGroups = React.useRef<Set<string>>(new Set());
 
     React.useEffect(() => {
         let isMounted = true;
@@ -73,24 +72,16 @@ export const GridFilters: React.FC<GridFiltersProps> = ({
         });
 
         const loadPendingCodes = async () => {
-            const groupsToFetch = Array.from(codeGroups).filter(group =>
-                !fetchedGroups.current.has(group)
-            );
-
+            const groupsToFetch = Array.from(codeGroups).filter(group => !options[group]);
             if (groupsToFetch.length === 0) return;
 
-            // Mark as fetching immediately to prevent redundant calls if processedFilters changes again
-            groupsToFetch.forEach(group => fetchedGroups.current.add(group));
-
             try {
-                // Fetch all in parallel - getCommCodes handles internal pending request deduplication
                 const results = await Promise.all(
                     groupsToFetch.map(async (group) => {
                         try {
                             const data = await getCommCodes(group);
                             return { group, data };
                         } catch {
-                            fetchedGroups.current.delete(group); // Allow retry
                             return { group, data: [] };
                         }
                     })
@@ -98,24 +89,22 @@ export const GridFilters: React.FC<GridFiltersProps> = ({
 
                 if (!isMounted) return;
 
-                // Batch all updates into a single setOptions call
                 const newOptions: Record<string, CommCode[]> = {};
                 results.forEach(({ group, data }) => {
-                    if (data && data.length > 0) newOptions[group] = data;
+                    newOptions[group] = data || [];
                 });
 
                 if (Object.keys(newOptions).length > 0) {
                     setOptions(prev => ({ ...prev, ...newOptions }));
                 }
             } catch (err) {
-                console.error("Failed to batch load common codes:", err);
+                console.error("Failed to load common codes:", err);
             }
         };
 
         loadPendingCodes();
-
         return () => { isMounted = false; };
-    }, [processedFilters]); // No longer depends on options
+    }, [processedFilters, options]);
 
     // 개별 필터 컨트롤 렌더링
     const renderFilterControl = (filter: FilterItem) => {
