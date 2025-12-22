@@ -29,7 +29,12 @@ export const getCommCodes = async (codeGrp: string): Promise<CommCode[]> => {
 
     // 3. 새 요청 생성
     const storedUser = sessionStorage.getItem('user');
-    const user = storedUser ? JSON.parse(storedUser) : {};
+    let user: any = {};
+    try {
+        user = storedUser ? JSON.parse(storedUser) : {};
+    } catch (e) {
+        console.warn("Failed to parse user session data, using defaults.", e);
+    }
     const mUsiteNo = user?.M_USITE_NO || 1;
 
     const requestPromise = axios.get<CommCode[]>('/api/comm-code', {

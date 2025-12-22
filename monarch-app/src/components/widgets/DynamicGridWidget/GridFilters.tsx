@@ -74,6 +74,7 @@ export const GridFilters: React.FC<GridFiltersProps> = ({
 
     // 개별 필터 컨트롤 렌더링
     const renderFilterControl = (filter: FilterItem) => {
+        if (!filter) return null;
         const filterType = filter.type || 'text';
 
         switch (filterType) {
@@ -127,10 +128,12 @@ export const GridFilters: React.FC<GridFiltersProps> = ({
                             displayEmpty
                         >
                             <MenuItem value="">전체</MenuItem>
-                            {items.map(item => (
-                                <MenuItem key={item.codeVal} value={item.codeVal}>
-                                    {item.codeName}
-                                </MenuItem>
+                            {items && Array.isArray(items) && items.map((item, idx) => (
+                                item && item.codeVal ? (
+                                    <MenuItem key={`${item.codeVal}-${idx}`} value={item.codeVal}>
+                                        {item.codeName || item.codeVal}
+                                    </MenuItem>
+                                ) : null
                             ))}
                         </Select>
                     </FormControl>

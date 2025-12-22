@@ -80,7 +80,12 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
         setError(null);
         try {
             const storedUser = sessionStorage.getItem('user');
-            const user = storedUser ? JSON.parse(storedUser) : {};
+            let user: any = {};
+            try {
+                user = storedUser ? JSON.parse(storedUser) : {};
+            } catch (e) {
+                console.warn("Failed to parse user session in fetchStructure:", e);
+            }
             const usiteNo = user?.M_USITE_NO || 1;
 
             const response = await axios.get('/api/data/execute', {
@@ -88,15 +93,30 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
             });
 
             if (response.data?.structureCont) {
-                const parsedConfig = parseConfig(response.data.structureCont);
+                const parsedSafeConfig = parseConfig(response.data.structureCont);
+
+                // Robustness: Cleanup arrays that might contain nulls from trailing commas
+                if (parsedSafeConfig.colgroup) parsedSafeConfig.colgroup = parsedSafeConfig.colgroup.filter(Boolean);
+                if (parsedSafeConfig.filterView) {
+                    parsedSafeConfig.filterView = parsedSafeConfig.filterView.filter(Boolean).map(row => {
+                        if (row && 'TD' in (row as any) && Array.isArray((row as any).TD)) {
+                            (row as any).TD = (row as any).TD.filter(Boolean);
+                        }
+                        return row;
+                    });
+                }
+                if (parsedSafeConfig.colModel) parsedSafeConfig.colModel = parsedSafeConfig.colModel.filter(Boolean);
+                if (parsedSafeConfig.buttons) parsedSafeConfig.buttons = parsedSafeConfig.buttons.filter(Boolean);
+
+                const parsedConfig = parsedSafeConfig;
 
                 // Default values for robustness
                 if (!parsedConfig.colgroup || parsedConfig.colgroup.length === 0) {
                     parsedConfig.colgroup = [{ "index": "Col1", "Width": "100%" }];
                 }
                 if (parsedConfig.filterView && parsedConfig.filterView.length > 0) {
-                    const firstItem = parsedConfig.filterView[0];
-                    if (!('TD' in firstItem)) {
+                    const firstItem = parsedConfig.filterView.find(item => item !== null);
+                    if (firstItem && !('TD' in firstItem)) {
                         parsedConfig.filterView = [{ TD: parsedConfig.filterView as FilterItem[] }];
                     }
                 }
@@ -129,7 +149,12 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
         try {
             const storedUser = sessionStorage.getItem('user');
-            const user = storedUser ? JSON.parse(storedUser) : {};
+            let user: any = {};
+            try {
+                user = storedUser ? JSON.parse(storedUser) : {};
+            } catch (e) {
+                console.warn("Failed to parse user session in fetchData:", e);
+            }
             const usite = user?.M_USITE_NO || 1;
             const uid = user?.M_USER_NO || null;
 
@@ -201,10 +226,10 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
             if (currentPage !== 1) {
                 // When filters change, we must go back to page 1.
                 // This state update triggers the page-change useEffect, which then executes the search.
-                setCurrentPage(1); 
+                setCurrentPage(1);
             } else {
                 // If we are already on page 1, we trigger the search directly.
-                fetchData(1, currentFilters); 
+                fetchData(1, currentFilters);
             }
         }, 1000); // 1-second debounce delay
 
@@ -227,7 +252,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
             const groups = new Map<string, TextFilterItem[]>();
 
             row.TD.forEach(item => {
-                if (item.type === 'text' && item.groupName) {
+                if (item && item.type === 'text' && item.groupName) {
                     if (!groups.has(item.groupName)) groups.set(item.groupName, []);
                     groups.get(item.groupName)!.push(item as TextFilterItem);
                 }
@@ -239,6 +264,7 @@ const DynamicGridWidget: React.FC<DynamicGridWidgetProps> = ({ structureName, on
 
             const processedGroupNames = new Set<string>();
             row.TD.forEach((item, itemIndex) => {
+                if (!item) return;
                 if (item.type === 'text' && item.groupName) {
                     if (!processedGroupNames.has(item.groupName)) {
                         processedGroupNames.add(item.groupName);
